@@ -2,7 +2,7 @@
 
 # ⚡ TokenTally
 
-**The ultimate developer toolkit for LLM token counting, multi-model cost estimation, codebase prompt packing, prompt optimization, git diff profiling, and CI/CD budget guardrails.**
+**The local-first AI resource optimization layer for LLM token counting, multi-model cost estimation, prompt decomposition, Git review value density, and CI/CD budget guardrails.**
 
 [![PyPI Version](https://img.shields.io/pypi/v/tokentally.svg?color=blue)](https://pypi.org/project/tokentally/)
 [![Python Versions](https://img.shields.io/pypi/pyversions/tokentally.svg)](https://pypi.org/project/tokentally/)
@@ -15,177 +15,277 @@
 
 ---
 
-## 💡 Why TokenTally?
+## The Problem
 
-As LLMs power modern agent swarms, automated test suites, code reviewers, and production pipelines, **uncontrolled token consumption leads to surprising API bills and broken context windows**.
+When engineering teams deploy autonomous agent loops, prompt templates, and AI code reviewers to production, token consumption is treated as an afterthought until the first multi-thousand dollar invoice arrives.
 
-Developers and engineering teams need answers to fundamental questions:
-* *How many tokens is this prompt or file across different model tokenizers?*
-* *How much will this call actually cost on GPT-4o vs Claude 3.7 vs Gemini 2.5 vs DeepSeek V3?*
-* *How can I pack my entire git repository into a structured prompt without exceeding limits?*
-* *How much will this git pull request cost to review with an AI coding bot?*
-* *How can I shrink prompt waste and redundant whitespace to save 20-30% on API costs?*
-* *How can I block CI/CD runs from accidentally spending \$50 on runaway evaluation loops?*
+In production LLM systems:
+1. **Prompts bloat silently**: Prompts grow from 400 tokens to 8,000 tokens as instructions and unranked RAG documents accumulate over time.
+2. **Review tokens are wasted**: AI code review bots burn 80% of their token budget reviewing minified JavaScript bundles and lockfiles (`package-lock.json`, `poetry.lock`).
+3. **Caches break invisibly**: Dynamic timestamps or UUIDs placed at line 1 invalidate prompt caching, forfeiting 50–90% provider discounts on every single call.
+4. **Agent histories compound quadratically**: Multi-turn dialogue resends historical context every step, accumulating $O(n^2)$ token overhead across long sessions.
+5. **No build-time gates**: A developer modifying a system prompt can introduce a 300% cost regression without failing any existing unit tests.
 
-**TokenTally** provides a unified, zero-dependency Python engine, high-speed CLI, interactive local web studio, and native Model Context Protocol (MCP) server that runs locally in milliseconds without requiring external API keys.
-
----
-
-## 🚀 Key Features
-
-* **⚡ Ultra-Fast Offline Tokenization**: Exact BPE encoding via `tiktoken` with calibrated zero-dependency heuristic fallback.
-* **💰 Real-Time Multi-Model Pricing**: Verified pricing for 25+ models across **OpenAI** (`gpt-4o`, `o1`, `o3-mini`, `gpt-4o-mini`), **Anthropic** (`claude-3-7-sonnet`, `claude-3-5-sonnet`, `claude-3-5-haiku`), **Google** (`gemini-2.5-pro`, `gemini-2.5-flash`), **DeepSeek** (`deepseek-v3`, `deepseek-r1`), **Mistral** (`codestral`, `mistral-large`), **Groq LPUs**, and **Ollama (local)**.
-* **🌐 Interactive Local Web Studio (`tokentally ui`)**: Built-in zero-dependency dark-mode visualizer with real-time sliders, comparison tables, and scenario simulations.
-* **🤖 Native Model Context Protocol (MCP) Server (`tokentally mcp`)**: Plug TokenTally directly into Cursor, Claude Desktop, and Antigravity so your AI agents can budget their own tokens before spending money.
-* **🔍 Git Diff AI Review Cost Profiler (`tokentally diff`)**: Profile staged changes, commits, or branch diffs to predict exact AI review costs before opening a PR.
-* **📉 Prompt Minifier & Optimizer (`tokentally optimize`)**: Intelligently strips redundant whitespace, comments, and empty lines, reducing token consumption by up to 30%.
-* **📦 Codebase Context Packer (`tokentally pack`)**: Repomix-compatible codebase bundler with `.gitignore` filtering and per-file token profiling.
-* **🛡️ CI/CD Budget Guardrail (`tokentally check`)**: Enforce hard token and dollar limits in CI pipelines or pre-commit hooks to halt runaway spending.
-* **🐍 Python SDK Tracking & Decorators**: `@tokentally.track` and `BudgetTracker` context managers for multi-call session spend observability.
-* **📊 Multi-Format Audit Reports (`tokentally report`)**: Generate executive Markdown and CSV reports with volume projections for 1k, 10k, 100k calls/month.
+**TokenTally** provides a local-first, zero-dependency Python library, CLI, local web studio, and native Model Context Protocol (MCP) server to measure, explain, profile, and enforce token economics before requests ever touch an external API.
 
 ---
 
-## 📦 Installation
+## Core Capabilities
+
+| Capability | Command | What It Solves |
+| :--- | :--- | :--- |
+| **Token Counting** | `tokentally count` | Dual BPE (`tiktoken`) + calibrated heuristic fallback with exact method transparency. |
+| **Inference Cost** | `tokentally cost` | Exact USD pricing calculating input, completion, and prompt cache hit rates. |
+| **Model Comparison** | `tokentally compare` | Instant side-by-side cost matrix across 25+ models from OpenAI, Anthropic, Google, DeepSeek, Mistral, Meta, Cohere, Bedrock, and Cerebras. |
+| **Context Attribution** | `tokentally analyze` | Decomposes prompts into layers (system, tools, user, history, RAG), checks static cache prefixes, and projects reasoning tokens. |
+| **Git Review Density**| `tokentally diff` | Classifies diff files into human vs generated vs lockfiles; computes Review Value Density. |
+| **Regression Gates** | `tokentally regression` | Compares candidate prompts against stored baselines or historical git refs (`git:main:prompt.txt`). |
+| **Tool Schema Audit** | `tokentally tools` | Measures JSON Schema token footprint, field depth, and parameter description bloat. |
+| **History Simulator**| `tokentally history` | Calculates cumulative $O(n^2)$ conversation token growth across dialogue turns. |
+| **Agent Trace Audit** | `tokentally trace` | Detects zero-progress cycles, repetitive tool calls, and runaway agent loops. |
+| **Codebase Packer** | `tokentally pack` | Bundles directories into structured XML/Markdown context prompts with `.gitignore` filtering. |
+| **Prompt Optimizer** | `tokentally optimize` | Constraint-invariant minification stripping whitespace and redundant comments without altering instructions. |
+| **CI/CD Guardrail** | `tokentally check` | Hard exit-code budget gate for GitHub Actions and pre-commit hooks based on `tokentally.toml`. |
+| **Local Web Studio** | `tokentally ui` | Zero-dependency dark-mode visualizer with real-time sliders and comparison tables. |
+| **MCP Server** | `tokentally mcp` | JSON-RPC 2.0 interface exposing 10 tools to Cursor, Claude Desktop, and Antigravity. |
+
+---
+
+## Installation
 
 ```bash
+# Core package (zero dependencies required, pure Python standard library)
 pip install tokentally
-```
 
-*Optional high-precision dev dependencies:*
-```bash
+# Optional: with tiktoken for exact OpenAI BPE tokenization
 pip install "tokentally[dev]"
 ```
 
 ---
 
-## 💻 CLI Command Reference
+## Command Reference
 
 ### 1. Count Tokens
+Counts tokens across files, raw text, or piped standard input:
 ```bash
-# Direct string
-tokentally count "Explain the difference between attention mechanisms and SSMs"
+# Raw text
+tokentally count "Explain the Raft consensus protocol in distributed databases"
 
-# From a file
+# Specific file
 tokentally count ./src/main.py --model gpt-4o
 
-# Piped from stdin
+# Read from stdin
 git diff | tokentally count -
 ```
 
 ### 2. Estimate Inference Cost
-Calculate exact USD pricing including input, expected output, and prompt caching discounts:
+Calculates billable input, completion, and cached token pricing:
 ```bash
-tokentally cost ./prompts/analysis_task.txt --model gpt-4o --completion-tokens 500
+tokentally cost ./prompts/system.txt --model gpt-4o --completion-tokens 500 --cached-tokens 1000
 ```
 ```text
 === TokenTally Cost Estimation ===
   Model:            gpt-4o (OpenAI)
-  Input Tokens:     1,240
+  Input Tokens:     2,450
+  Cached Tokens:    1,000 (cached rate applied)
   Output Tokens:    500
-  Total Tokens:     1,740
+  Total Tokens:     2,950
   --------------------------------
-  Input Cost:       $0.003100
+  Input Cost:       $0.003625
+  Cached Cost:      $0.001250
   Output Cost:      $0.005000
-  Total Cost:       $0.008100
+  Total Cost:       $0.009875
 ```
 
-### 3. Multi-Model Comparison Table
-See how much your prompt costs across every major provider side-by-side:
+### 3. Compare Across Providers
+Compares dollar costs side-by-side against the cheapest baseline:
 ```bash
-tokentally compare ./prompts/analysis_task.txt
+tokentally compare ./prompts/analysis.txt
 ```
 ```text
 === Multi-Model Cost Comparison ===
 MODEL                  PROVIDER       IN TOK    OUT TOK   TOTAL COST     RATIO
 ------------------------------------------------------------------------------
-deepseek-v3            DeepSeek       1,240     620       $0.000347      0.04x
-gemini-2.5-flash       Google         1,240     620       $0.000372      0.04x
-gpt-4o-mini            OpenAI         1,240     620       $0.000558      0.06x
-deepseek-r1            DeepSeek       1,240     620       $0.002040      0.22x
-claude-3-5-haiku       Anthropic      1,240     620       $0.003472      0.37x
-o3-mini                OpenAI         1,240     620       $0.004092      0.44x
-gemini-2.5-pro         Google         1,240     620       $0.004650      0.50x
-gpt-4o                 OpenAI         1,240     620       $0.009300      1.00x
-claude-3-7-sonnet      Anthropic      1,240     620       $0.013020      1.40x
-claude-3-5-sonnet      Anthropic      1,240     620       $0.013020      1.40x
-o1                     OpenAI         1,240     620       $0.055800      6.00x
+deepseek-v3            DeepSeek       1,840     920       $0.000515      0.04x
+gemini-2.5-flash       Google         1,840     920       $0.000552      0.04x
+gpt-4o-mini            OpenAI         1,840     920       $0.000828      0.06x
+command-r              Cohere         1,840     920       $0.000828      0.06x
+cerebras-llama-3.3-70b Cerebras       1,840     920       $0.001656      0.12x
+deepseek-r1            DeepSeek       1,840     920       $0.003027      0.22x
+claude-3-5-haiku       Anthropic      1,840     920       $0.005152      0.37x
+o3-mini                OpenAI         1,840     920       $0.006072      0.44x
+gemini-2.5-pro         Google         1,840     920       $0.006900      0.50x
+gpt-4o                 OpenAI         1,840     920       $0.013800      1.00x
+claude-3-5-sonnet      Anthropic      1,840     920       $0.019320      1.40x
+claude-3-7-sonnet      Anthropic      1,840     920       $0.019320      1.40x
+o1                     OpenAI         1,840     920       $0.082800      6.00x
 ```
 
-### 4. Git Diff AI Review Profiler
-Analyze token size and estimated code review costs of uncommitted or staged changes:
+### 4. Context Decomposition & Prompt Caching Audit
+Inspects prompt layer attribution and verifies prompt caching eligibility:
 ```bash
-# Check working tree changes
+tokentally analyze ./prompts/chat_context.json --model gpt-4o --output audit.md
+```
+```text
+=== TokenTally Context & Bloat Audit ===
+  Total Tokens:       4,250 [exact BPE: o200k_base]
+  Model Evaluated:    gpt-4o ($0.010625/call)
+
+Context Components Attribution:
+  LAYER                    TOKENS    DISTRIBUTION       PERCENT   EST. COST    CACHEABLE
+  ----------------------------------------------------------------------------------------
+  system_instructions      1,200     [####----------]   28.2%     $0.003000    Yes
+  tool_definitions         1,850     [######--------]   43.5%     $0.004625    Yes
+  rag_context              800       [###-----------]   18.8%     $0.002000    No
+  user_request             400       [#-------------]   9.4%      $0.001000    No
+
+Prompt Caching Analysis:
+  Static Prefix Tokens:   3,050
+  Dynamic Tokens:        1,200
+  Cache Status:          Eligible
+  Estimated Hit Rate:    71.8%
+  Recommendation:        Static prefix meets minimum threshold (1,024 tokens). Expected 50-90% caching discount applied.
+```
+
+### 5. Git Diff AI Review Profiler
+Profiles git changes to calculate Review Value Density before opening a PR:
+```bash
+# Check working tree
 tokentally diff
 
-# Check only staged changes
-tokentally diff --staged --model gpt-4o
-
-# Compare against main branch
-tokentally diff main --model gpt-4o
+# Profile only human logic changes, excluding package-lock.json and autogenerated files
+tokentally diff main --exclude-generated --output pr_review_cost.md
 ```
 ```text
 === Git Diff AI Review Cost Profiler ===
-  Target Ref:         working-tree
-  Files Modified:     3
-  Diff Patch Tokens:  7,878 (model: gpt-4o)
-  Est. Review Cost:   $0.024695
-
-FILE                                     TOKENS     CHANGES
------------------------------------------------------------------
-src/tokentally/__init__.py               595        +43/-2
-src/tokentally/cli.py                    3,595      +170/-10
-src/tokentally/models.py                 3,679      +125/-26
+  Target Ref:           main
+  Files Modified:       5
+  Effective Review Tokens: 4,120 (model: gpt-4o)
+  Human Logic Tokens:   3,850
+  Generated/Lock Tokens:270
+  Review Value Density: 93.4%
+  Estimated Review Cost:$0.010300
 ```
 
-### 5. Prompt Optimizer & Minifier
-Remove redundant whitespace, trailing spaces, and comments to shrink tokens:
+### 6. Prompt Token Regression Gate
+Ensures prompt modifications do not inflate token counts beyond a threshold:
 ```bash
-tokentally optimize prompt.txt --output prompt_clean.txt --strip-comments
+# Compare working file against a git branch or commit
+tokentally regression git:main:prompts/system.txt prompts/system.txt --max-regression-pct 15.0
 ```
 ```text
-[PASS] Prompt Optimization Complete!
-  Original Tokens:   4,520 ($0.011300)
-  Optimized Tokens:  3,110 ($0.007775)
-  Tokens Saved:      1,410 (31.2% reduction)
-  Per 10k Invocations: Saves $35.25
+=== Prompt Token Regression Audit ===
+  Baseline Tokens:    1,200 ($0.003000)
+  Candidate Tokens:   1,320 ($0.003300)
+  Token Delta:        +120 tokens (+10.0%)
+  Monthly Cost Impact:+$3.00 / 10k calls
+
+[PASS] Token change (+10.0%) is within allowed threshold (+15.0%).
 ```
 
-### 6. Codebase Context Packer
-Pack an entire repository into structured XML or Markdown context for pasting into ChatGPT, Claude, or Gemini:
+### 7. Tool Schema Audit
+Audits function definitions to identify parameter bloat:
 ```bash
-tokentally pack ./src --output context.xml --model gpt-4o
+tokentally tools ./agent_tools.json
+```
+```text
+=== Tool Schema Context & Bloat Audit ===
+  Total Tools Exposed:  12
+  Total Schema Tokens:  2,840
+  Fixed Overhead/Call:  $0.007100
+
+TOOL NAME                      TOKENS     FIELDS   DEPTH    DESC %
+-----------------------------------------------------------------
+database_query_tool            820        14       3         62.4%
+fetch_customer_record          640        9        2         54.1%
+calculator                     110        2        1         32.0%
 ```
 
-### 7. Interactive Local Web Studio
-Launch the local web dashboard:
+### 8. Multi-Turn Cumulative History Simulator
+Simulates the $O(n^2)$ reprocessing multiplier of multi-turn dialogues:
 ```bash
-tokentally ui --port 7860
+tokentally history --turns 15 --tokens-per-turn 400
 ```
-Open `http://localhost:7860` in your browser for real-time prompt drafting and interactive sliders.
+```text
+=== Multi-Turn History O(n^2) Cumulative Growth Simulation ===
+  Dialogue Turns:            15
+  Tokens added/turn:         400
+  Final Single-Turn Context: 6,000 tokens ($0.015000)
+  Cumulative Processed:     48,000 tokens ($0.120000)
+  Reprocessing Multiplier:  8.0x overhead
 
-### 8. CI/CD Budget Guardrail
-Fail CI builds or pre-commit checks if prompts or contexts exceed your budget:
-```bash
-tokentally check ./prompts/system.txt --max-cost 0.20 --max-tokens 50000 --model gpt-4o
+  Recommendation: Over 15 turns, naive history re-sending forces the model to process 48,000 cumulative tokens (8.0x the final 6,000 token state). Compressing historical turns into a state object saves $0.1050 per session.
 ```
 
-### 9. Instant Workflow Scaffolding
+### 9. Prompt Minifier & Optimizer
+Minifies prompts by stripping redundant whitespace and comments with guaranteed constraint invariance:
 ```bash
-# Generate .github/workflows/tokentally-budget.yml
-tokentally init-workflow
+tokentally optimize prompt.txt --output prompt_min.txt --strip-comments
+```
+```text
+[PASS] Prompt Optimization Complete! [Invariance: 100% Passed]
+  Original Tokens:   3,450 ($0.008625)
+  Optimized Tokens:  2,520 ($0.006300)
+  Tokens Saved:      930 (27.0% reduction)
+  Per 10k Invocations: Saves $23.25
+```
 
-# Install .git/hooks/pre-commit
-tokentally install-hook
+### 10. Codebase Context Packer
+Packs files into a structured XML or Markdown prompt respecting `.gitignore` and `.tokentallyignore`:
+```bash
+tokentally pack ./src --output context.xml --max-tokens 50000 --ignore "tests/*,*.log"
+```
+
+### 11. Custom Model Management
+Register proprietary internal or fine-tuned models:
+```bash
+# Register a custom fine-tune
+tokentally models --add my-company-model --provider Internal --input 0.50 --output 1.50 --cached 0.10
+
+# Remove when deprecated
+tokentally models --remove my-company-model
 ```
 
 ---
 
-## 🤖 Model Context Protocol (MCP) Integration
+## Configuration (`tokentally.toml`)
 
-TokenTally includes a built-in MCP server. Connect it to **Cursor**, **Claude Desktop**, or **Antigravity**:
+Tokentally reads policies declaratively from `tokentally.toml`:
 
-Add this to your `claude_desktop_config.json` or Cursor MCP settings:
+```toml
+[budget]
+default_model = "gpt-4o"
+max_prompt_tokens = 60000
+max_cost_per_request = 0.25
+warning_cost_usd = 0.10
+
+[regression]
+baseline_file = "prompts/system_v1.txt"
+max_regression_pct = 12.0
+fail_on_regression = true
+
+[review]
+max_review_tokens = 40000
+exclude_lockfiles = true
+exclude_generated = true
+
+# Register private or fine-tuned model pricing
+[custom_models.internal_llama]
+provider = "Internal Infrastructure"
+input_per_m = 0.40
+output_per_m = 1.20
+cached_input_per_m = 0.08
+context_window = 32768
+description = "Internal fine-tuned LLaMA-3 model"
+```
+
+---
+
+## Model Context Protocol (MCP) Integration
+
+Tokentally includes a native stdio JSON-RPC 2.0 MCP server. Connect it to **Cursor**, **Claude Desktop**, or **Antigravity**:
+
+Add this to your `claude_desktop_config.json` or Cursor MCP configuration:
 
 ```json
 {
@@ -198,76 +298,101 @@ Add this to your `claude_desktop_config.json` or Cursor MCP settings:
 }
 ```
 
-Now your AI assistant has native access to:
+Exposed MCP tools:
 * `tokentally_estimate_cost`
 * `tokentally_compare_models`
+* `tokentally_analyze_context`
+* `tokentally_profile_git_diff`
+* `tokentally_check_regression`
+* `tokentally_inspect_tools`
+* `tokentally_simulate_history`
+* `tokentally_audit_agent_trace`
 * `tokentally_pack_workspace`
 * `tokentally_optimize_prompt`
 
 ---
 
-## 🐍 Python SDK Examples
+## Python SDK Examples
 
 ```python
 import tokentally as tt
 
-# 1. Count tokens
-tokens = tt.count_tokens("Explain quantum computing", model="gpt-4o")
+# 1. High-precision or heuristic token count
+result = tt.count_tokens_detailed("Explain vector databases", model="gpt-4o")
+print(f"Tokens: {result.tokens} (Method: {result.method}, Exact: {result.is_exact})")
 
 # 2. Multi-model cost estimation
-cost = tt.estimate_cost(tokens=12500, model="gpt-4o", completion_tokens=1000)
-print(f"Cost: ${cost.total_cost_usd:.6f}")
+cost = tt.estimate_cost("Prompt text...", model="claude-3-5-sonnet", completion_tokens=800)
+print(f"Total Call Cost: ${cost.total_cost_usd:.6f}")
 
-# 3. Session Budget Tracking
+# 3. Context layer decomposition
+analysis = tt.analyze_prompt_context(prompt_text, model="gpt-4o")
+print(f"Cache Hit Rate: {analysis.cacheability.estimated_cache_hit_rate_pct}%")
+
+# 4. Invariance-preserving optimization
+minified = tt.optimize_prompt(prompt_text, strip_comments=True)
+print(f"Saved {minified.percent_reduction}% tokens without touching constraints")
+
+# 5. Session budget tracking context manager
 with tt.BudgetTracker(max_budget_usd=1.00) as tracker:
-    tracker.record("Prompt 1", completion="Answer 1", model="gpt-4o")
-    tracker.record("Prompt 2", completion="Answer 2", model="o3-mini")
+    tracker.record(prompt="Task 1", completion="Output 1", model="gpt-4o")
+    tracker.record(prompt="Task 2", completion="Output 2", model="deepseek-v3")
 
 print(tracker.summary())
 
-# 4. Function Decorator
+# 6. Function decorator guardrail
 @tt.track(model="gpt-4o", max_cost_usd=0.05)
-def call_agent(prompt: str):
-    return "LLM response..."
-
-# 5. Optimize prompt text
-clean = tt.optimize_prompt("messy   prompt\n\n\n\ntext", strip_comments=True)
-print(f"Saved {clean.percent_reduction}% tokens")
-
-# 6. Profile git diff
-diff_summary = tt.profile_git_diff(staged=True)
-print(f"Diff Tokens: {diff_summary.total_tokens}, Est. Review Cost: ${diff_summary.estimated_review_cost_usd:.4f}")
+def call_agent_pipeline(query: str):
+    return "LLM result"
 ```
 
 ---
 
-## 📋 Supported Models & Pricing Matrix
+## Supported Models & Pricing Matrix (USD per 1M tokens)
 
-| Model | Provider | Input / 1M | Output / 1M | Cached / 1M | Context |
+| Model Identifier | Provider | Input ($) | Output ($) | Cached ($) | Context Window |
 | :--- | :--- | :--- | :--- | :--- | :--- |
-| **gpt-4o** | OpenAI | \$2.50 | \$10.00 | \$1.25 | 128k |
-| **gpt-4o-mini** | OpenAI | \$0.15 | \$0.60 | \$0.075 | 128k |
-| **o1** | OpenAI | \$15.00 | \$60.00 | \$7.50 | 200k |
-| **o1-mini** | OpenAI | \$1.10 | \$4.40 | \$0.55 | 128k |
-| **o3-mini** | OpenAI | \$1.10 | \$4.40 | \$0.55 | 200k |
-| **claude-3-7-sonnet** | Anthropic | \$3.00 | \$15.00 | \$0.30 | 200k |
-| **claude-3-5-sonnet** | Anthropic | \$3.00 | \$15.00 | \$0.30 | 200k |
-| **claude-3-5-haiku** | Anthropic | \$0.80 | \$4.00 | \$0.08 | 200k |
-| **gemini-2.5-pro** | Google | \$1.25 | \$5.00 | \$0.3125 | 1000k |
-| **gemini-2.5-flash** | Google | \$0.10 | \$0.40 | \$0.025 | 1000k |
-| **deepseek-v3** | DeepSeek | \$0.14 | \$0.28 | \$0.014 | 64k |
-| **deepseek-r1** | DeepSeek | \$0.55 | \$2.19 | \$0.14 | 64k |
-| **codestral** | Mistral | \$0.30 | \$0.90 | N/A | 256k |
-| **mistral-large** | Mistral | \$2.00 | \$6.00 | N/A | 128k |
-| **groq-llama-3.3-70b**| Groq | \$0.59 | \$0.79 | N/A | 128k |
-| **ollama-local** | Ollama | \$0.00 | \$0.00 | \$0.00 | 128k |
+| **gpt-4o** | OpenAI | \$2.5000 | \$10.0000 | \$1.2500 | 128k |
+| **gpt-4o-mini** | OpenAI | \$0.1500 | \$0.6000 | \$0.0750 | 128k |
+| **o1** | OpenAI | \$15.0000 | \$60.0000 | \$7.5000 | 200k |
+| **o1-mini** | OpenAI | \$1.1000 | \$4.4000 | \$0.5500 | 128k |
+| **o3-mini** | OpenAI | \$1.1000 | \$4.4000 | \$0.5500 | 200k |
+| **claude-3-7-sonnet** | Anthropic | \$3.0000 | \$15.0000 | \$0.3000 | 200k |
+| **claude-3-5-sonnet** | Anthropic | \$3.0000 | \$15.0000 | \$0.3000 | 200k |
+| **claude-3-5-haiku** | Anthropic | \$0.8000 | \$4.0000 | \$0.0800 | 200k |
+| **claude-3-opus** | Anthropic | \$15.0000 | \$75.0000 | \$1.5000 | 200k |
+| **gemini-2.5-pro** | Google | \$1.2500 | \$5.0000 | \$0.3125 | 1000k |
+| **gemini-2.5-flash** | Google | \$0.1000 | \$0.4000 | \$0.0250 | 1000k |
+| **gemini-2.0-flash** | Google | \$0.1000 | \$0.4000 | \$0.0250 | 1000k |
+| **deepseek-v3** | DeepSeek | \$0.1400 | \$0.2800 | \$0.0140 | 64k |
+| **deepseek-r1** | DeepSeek | \$0.5500 | \$2.1900 | \$0.1400 | 64k |
+| **codestral** | Mistral | \$0.3000 | \$0.9000 | N/A | 256k |
+| **mistral-large** | Mistral | \$2.0000 | \$6.0000 | N/A | 128k |
+| **command-r** | Cohere | \$0.1500 | \$0.6000 | \$0.0750 | 128k |
+| **command-r-plus** | Cohere | \$2.5000 | \$10.0000 | \$1.2500 | 128k |
+| **bedrock-claude-3-5** | AWS Bedrock | \$3.0000 | \$15.0000 | \$0.3000 | 200k |
+| **bedrock-nova-pro** | AWS Bedrock | \$0.8000 | \$3.2000 | \$0.2000 | 300k |
+| **bedrock-nova-lite** | AWS Bedrock | \$0.0600 | \$0.2400 | \$0.0150 | 300k |
+| **cerebras-llama-3.3-70b**| Cerebras | \$0.6000 | \$0.6000 | N/A | 128k |
+| **groq-llama-3.3-70b** | Groq | \$0.5900 | \$0.7900 | N/A | 128k |
+| **qwen-2.5-coder-32b** | Alibaba / Open | \$0.2000 | \$0.2000 | N/A | 128k |
+| **llama-3.3-70b** | Meta / Open | \$0.7000 | \$0.8000 | N/A | 128k |
+| **ollama-local** | Ollama | \$0.0000 | \$0.0000 | \$0.0000 | 128k |
+| **vllm-local** | vLLM | \$0.0000 | \$0.0000 | \$0.0000 | 128k |
 
 ---
 
-## 🤝 Contributing
+## Further Documentation
 
-Contributions are welcome! Check out [CONTRIBUTING.md](CONTRIBUTING.md) to add new models, customize pricing, or contribute features.
+* [🔬 Empirical Research Foundations](docs/research_foundations.md): The papers and benchmarks behind Tokentally (FrugalGPT, LLMLingua, Lost in the Middle, PagedAttention, KV-caching).
+* [🏗️ Architecture & Component Design](docs/ARCHITECTURE.md): System invariants, data structures, and the zero-dependency execution model.
 
-## 📄 License
+---
 
-TokenTally is open-source software licensed under the [MIT License](LICENSE).
+## Contributing
+
+Contributions are welcome. Please read [CONTRIBUTING.md](CONTRIBUTING.md) for testing guidelines and guidelines on submitting model pricing updates.
+
+## License
+
+Tokentally is open-source software licensed under the [MIT License](LICENSE).
