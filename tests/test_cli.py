@@ -109,6 +109,19 @@ class TestCLI(unittest.TestCase):
         self.assertEqual(ret, 0)
         self.assertIn('"saved_tokens"', f.getvalue())
 
+    def test_cli_models_add_and_remove(self):
+        f_add = io.StringIO()
+        with redirect_stdout(f_add):
+            ret_add = main(["models", "--add", "test-finetune-cli", "--input", "0.75", "--output", "2.25", "--json"])
+        self.assertEqual(ret_add, 0)
+        self.assertIn('"status": "added"', f_add.getvalue())
+
+        f_rem = io.StringIO()
+        with redirect_stdout(f_rem):
+            ret_rem = main(["models", "--remove", "test-finetune-cli", "--json"])
+        self.assertEqual(ret_rem, 0)
+        self.assertIn('"status": "removed"', f_rem.getvalue())
+
 
 if __name__ == "__main__":
     unittest.main()

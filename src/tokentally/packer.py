@@ -108,18 +108,19 @@ class RepositoryPacker:
         if custom_ignore_exts:
             self.ignore_exts.update(custom_ignore_exts)
 
-    def _read_gitignore(self, root: Path) -> List[str]:
-        gitignore_path = root / ".gitignore"
-        patterns = []
-        if gitignore_path.is_file():
-            try:
-                with open(gitignore_path, "r", encoding="utf-8", errors="ignore") as f:
-                    for line in f:
-                        line = line.strip()
-                        if line and not line.startswith("#"):
-                            patterns.append(line)
-            except OSError:
-                pass
+    def _read_ignore_files(self, root: Path) -> List[str]:
+        patterns: List[str] = []
+        for ignore_name in [".gitignore", ".tokentallyignore", ".ignore"]:
+            p = root / ignore_name
+            if p.is_file():
+                try:
+                    with open(p, "r", encoding="utf-8", errors="ignore") as f:
+                        for line in f:
+                            line = line.strip()
+                            if line and not line.startswith("#"):
+                                patterns.append(line)
+                except OSError:
+                    pass
         return patterns
 
     def _should_ignore(self, path: Path, rel_str: str, gitignore_patterns: List[str]) -> bool:
@@ -150,6 +151,7 @@ class RepositoryPacker:
         model: str = "gpt-4o",
         max_tokens: Optional[int] = None,
         format_type: str = "xml",
+        extra_ignore_patterns: Optional[List[str]] = None,
     ) -> PackResult:
         """
         Scan and assemble context from directory files.
@@ -159,7 +161,9 @@ class RepositoryPacker:
         if not root_path.is_dir():
             raise NotADirectoryError(f"Directory not found: {directory}")
 
-        gitignore_patterns = self._read_gitignore(root_path)
+        gitignore_patterns = self._read_ignore_files(root_path)
+        if extra_ignore_patterns:
+            gitignore_patterns.extend(extra_ignore_patterns)
 
         collected_files: List[Path] = []
         for dirpath, dirnames, filenames in os.walk(root_path):
@@ -279,6 +283,7 @@ def pack_repository(
     model: str = "gpt-4o",
     max_tokens: Optional[int] = None,
     format_type: str = "xml",
+    extra_ignore_patterns: Optional[List[str]] = None,
 ) -> PackResult:
     """Convenience helper to pack a repository folder."""
     return _DEFAULT_PACKER.pack(
@@ -287,4 +292,5 @@ def pack_repository(
         model=model,
         max_tokens=max_tokens,
         format_type=format_type,
+        extra_ignore_patterns=extra_ignore_patterns,
     )

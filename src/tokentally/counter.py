@@ -50,7 +50,11 @@ _TOKEN_PATTERN = re.compile(
 def get_model_encoding(model_name: str) -> str:
     """Return the tiktoken encoding name suitable for the model."""
     name = model_name.strip().lower()
-    return MODEL_TO_ENCODING.get(name, "cl100k_base")
+    if name in MODEL_TO_ENCODING:
+        return MODEL_TO_ENCODING[name]
+    if name.startswith(("gpt-4o", "o1", "o3", "llama", "deepseek", "qwen", "groq-llama", "cerebras-llama")):
+        return "o200k_base"
+    return "cl100k_base"
 
 
 class TokenCounter:

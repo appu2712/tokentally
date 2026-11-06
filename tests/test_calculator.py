@@ -1,6 +1,13 @@
 import unittest
 from tokentally.calculator import estimate_cost, compare_models, CostCalculator
-from tokentally.models import MODEL_REGISTRY, get_model_pricing
+from tokentally.models import (
+    MODEL_REGISTRY,
+    get_model_pricing,
+    normalize_model_name,
+    save_custom_model,
+    remove_custom_model,
+    ModelPricing,
+)
 
 
 class TestCalculator(unittest.TestCase):
@@ -41,6 +48,43 @@ class TestCalculator(unittest.TestCase):
         # Check that rows are sorted ascending by cost
         for i in range(len(rows) - 1):
             self.assertLessEqual(rows[i].total_cost_usd, rows[i+1].total_cost_usd)
+
+    def test_normalize_model_name_date_and_provider_prefixes(self):
+        self.assertEqual(normalize_model_name("claude-3-5-sonnet-20241022"), "claude-3-5-sonnet")
+        self.assertEqual(normalize_model_name("anthropic/claude-3-5-sonnet"), "claude-3-5-sonnet")
+        self.assertEqual(normalize_model_name("openai/gpt-4o-2024-08-06"), "gpt-4o")
+        self.assertEqual(normalize_model_name("gemini-1.5-flash-002"), "gemini-1.5-flash")
+
+    def test_multi_provider_coverage(self):
+        # Cohere
+        p_cohere = get_model_pricing("command-r")
+        self.assertEqual(p_cohere.provider, "Cohere")
+        # Bedrock
+        p_bedrock = get_model_pricing("bedrock-nova-pro")
+        self.assertEqual(p_bedrock.provider, "AWS Bedrock")
+        # Cerebras
+        p_cerebras = get_model_pricing("cerebras-llama-3.3-70b")
+        self.assertEqual(p_cerebras.provider, "Cerebras")
+        # Qwen
+        p_qwen = get_model_pricing("qwen-2.5-coder-32b")
+        self.assertEqual(p_qwen.provider, "Alibaba / Open")
+
+    def test_dynamic_custom_model_lifecycle(self):
+        model_name = "test-custom-finetune-xyz"
+        pricing = ModelPricing(
+            provider="CustomOrg",
+            name=model_name,
+            input_per_m=0.88,
+            output_per_m=2.44,
+        )
+        save_custom_model(pricing)
+        retrieved = get_model_pricing(model_name)
+        self.assertEqual(retrieved.provider, "CustomOrg")
+        self.assertEqual(retrieved.input_per_m, 0.88)
+
+        # Cleanup
+        removed = remove_custom_model(model_name)
+        self.assertTrue(removed)
 
 
 if __name__ == "__main__":

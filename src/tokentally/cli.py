@@ -23,7 +23,7 @@ from .analyzer import analyze_prompt_context
 from .regression import compare_prompt_regression
 from .tools import analyze_tool_schemas, simulate_history_growth
 from .config import load_config
-from .models import MODEL_REGISTRY, list_supported_models
+from .models import MODEL_REGISTRY, list_supported_models, ModelPricing, save_custom_model, remove_custom_model, get_full_registry
 
 # Ensure stdout encoding is safe across all platforms
 if hasattr(sys.stdout, "reconfigure"):
@@ -225,11 +225,36 @@ def handle_analyze(args: argparse.Namespace) -> int:
         for w in res.bloat_warnings:
             print(f"  {YELLOW}• {w}{RESET}")
 
-    if res.recommendations:
-        print(f"\n{BOLD}{GREEN}Optimization Recommendations:{RESET}")
-        for r in res.recommendations:
-            print(f"  {GREEN}✓ {r}{RESET}")
-    print()
+    if args.output:
+        if args.output.endswith(".json") or args.json:
+            with open(args.output, "w", encoding="utf-8") as f:
+                json.dump(res.to_dict(), f, indent=2)
+        else:
+            lines = [
+                f"# 🔍 TokenTally Context & Bloat Audit",
+                f"- **Total Tokens**: {res.total_tokens:,}",
+                f"- **Model Evaluated**: `{res.model}` (${res.total_cost_usd:.6f}/call)",
+                f"- **Tokenizer Method**: {res.method}",
+                "",
+                "## Layer Breakdown",
+                "| Layer | Tokens | Percent | Est. Cost | Cacheable |",
+                "| :--- | :--- | :--- | :--- | :--- |",
+            ]
+            for c in res.components:
+                c_str = "Yes" if c.is_cacheable else "No"
+                lines.append(f"| **{c.name}** | {c.tokens:,} | {c.pct_of_total:.1f}% | ${c.cost_usd:.6f} | {c_str} |")
+            lines.extend([
+                "",
+                "## Prompt Caching Analysis",
+                f"- **Static Prefix Tokens**: {res.cacheability.static_prefix_tokens:,}",
+                f"- **Dynamic Tokens**: {res.cacheability.dynamic_tokens:,}",
+                f"- **Estimated Hit Rate**: {res.cacheability.estimated_cache_hit_rate_pct}%",
+                f"- **Recommendation**: {res.cacheability.recommendation}",
+            ])
+            with open(args.output, "w", encoding="utf-8") as f:
+                f.write("\n".join(lines) + "\n")
+        print(f"\n{BOLD}{GREEN}{CHECKMARK} Context audit report saved:{RESET} {CYAN}{args.output}{RESET}")
+
     return 0
 
 
@@ -278,6 +303,32 @@ def handle_diff(args: argparse.Namespace) -> int:
         for r in diff_res.recommendations:
             print(f"  {YELLOW}• {r}{RESET}")
     print()
+
+    if getattr(args, "output", None):
+        if args.output.endswith(".json") or args.json:
+            with open(args.output, "w", encoding="utf-8") as f:
+                json.dump(diff_res.to_dict(), f, indent=2)
+        else:
+            lines = [
+                f"# 🔍 Git Diff AI Review Cost Profiler",
+                f"- **Target Ref**: `{diff_res.target_ref}`",
+                f"- **Files Modified**: {diff_res.files_changed}",
+                f"- **Effective Review Tokens**: {diff_res.total_tokens:,} ({diff_res.model})",
+                f"- **Human Core Logic Tokens**: {diff_res.human_code_tokens:,}",
+                f"- **Generated / Lockfile Tokens**: {diff_res.generated_tokens:,}",
+                f"- **Review Value Density**: `{diff_res.review_value_density * 100:.1f}%`",
+                f"- **Estimated Review Cost**: ${diff_res.estimated_review_cost_usd:.6f}",
+                "",
+                "## File Breakdown",
+                "| File | Tokens | Category | Added | Deleted |",
+                "| :--- | :--- | :--- | :--- | :--- |",
+            ]
+            for f in diff_res.file_breakdown:
+                lines.append(f"| `{f.path}` | {f.tokens:,} | {f.category} | +{f.added_lines} | -{f.deleted_lines} |")
+            with open(args.output, "w", encoding="utf-8") as f:
+                f.write("\n".join(lines) + "\n")
+        print(f"{BOLD}{GREEN}{CHECKMARK} Review profiler report saved:{RESET} {CYAN}{args.output}{RESET}\n")
+
     return 0
 
 
@@ -305,6 +356,23 @@ def handle_regression(args: argparse.Namespace) -> int:
     sign = "+" if reg_res.delta_tokens > 0 else ""
     print(f"  {BOLD}Token Delta:{RESET}        {delta_color}{sign}{reg_res.delta_tokens:,} tokens ({sign}{reg_res.percent_change}%){RESET}")
     print(f"  {BOLD}Monthly Cost Impact:{RESET}{delta_color}{sign}${reg_res.projected_monthly_impact_10k_usd:,.2f} / 10k calls{RESET}")
+
+    if getattr(args, "output", None):
+        if args.output.endswith(".json") or args.json:
+            with open(args.output, "w", encoding="utf-8") as f:
+                json.dump(reg_res.to_dict(), f, indent=2)
+        else:
+            lines = [
+                f"# 🚨 Prompt Token Regression Report",
+                f"- **Baseline Tokens**: {reg_res.baseline_tokens:,} (${reg_res.baseline_cost_usd:.6f})",
+                f"- **Candidate Tokens**: {reg_res.candidate_tokens:,} (${reg_res.candidate_cost_usd:.6f})",
+                f"- **Token Delta**: {sign}{reg_res.delta_tokens:,} ({sign}{reg_res.percent_change}%)",
+                f"- **Monthly Impact (10k invocations)**: ${reg_res.projected_monthly_impact_10k_usd:,.2f}",
+                f"- **Verdict**: {reg_res.message}",
+            ]
+            with open(args.output, "w", encoding="utf-8") as f:
+                f.write("\n".join(lines) + "\n")
+        print(f"{BOLD}{GREEN}{CHECKMARK} Regression report saved:{RESET} {CYAN}{args.output}{RESET}\n")
 
     if reg_res.is_violation:
         print(f"\n{BOLD}{RED}{CROSSMARK} {reg_res.message}{RESET}\n")
@@ -453,12 +521,14 @@ def handle_optimize(args: argparse.Namespace) -> int:
 
 def handle_pack(args: argparse.Namespace) -> int:
     try:
+        extra_ignore = [p.strip() for p in args.ignore.split(",")] if getattr(args, "ignore", None) else None
         pack_res = pack_repository(
             directory=args.directory,
             output_file=args.output,
             model=args.model,
             max_tokens=args.max_tokens,
             format_type=args.format,
+            extra_ignore_patterns=extra_ignore,
         )
     except Exception as e:
         sys.stderr.write(f"{RED}Error:{RESET} {e}\n")
@@ -563,24 +633,54 @@ def handle_install_hook(args: argparse.Namespace) -> int:
 
 
 def handle_models(args: argparse.Namespace) -> int:
+    if getattr(args, "add", None):
+        pricing = ModelPricing(
+            provider=args.provider or "Custom",
+            name=args.add,
+            input_per_m=args.input,
+            output_per_m=args.output,
+            cached_input_per_m=args.cached,
+            context_window=args.context,
+            description=f"User-defined custom model {args.add}",
+        )
+        save_custom_model(pricing)
+        if args.json:
+            print(json.dumps({"status": "added", "model": pricing.to_dict()}, indent=2))
+        else:
+            print(f"\n{BOLD}{GREEN}{CHECKMARK} Custom model '{args.add}' successfully registered!{RESET}")
+            print(f"  Provider: {pricing.provider} | Input: ${pricing.input_per_m:.4f}/M | Output: ${pricing.output_per_m:.4f}/M\n")
+        return 0
+
+    if getattr(args, "remove", None):
+        removed = remove_custom_model(args.remove)
+        if args.json:
+            print(json.dumps({"status": "removed" if removed else "not_found", "model": args.remove}, indent=2))
+        else:
+            if removed:
+                print(f"\n{BOLD}{GREEN}{CHECKMARK} Custom model '{args.remove}' removed.{RESET}\n")
+            else:
+                print(f"\n{BOLD}{YELLOW}Model '{args.remove}' was not found in custom pricing.{RESET}\n")
+        return 0
+
+    registry = get_full_registry()
     models = list_supported_models()
 
     if args.json:
-        data = {m: MODEL_REGISTRY[m].__dict__ for m in models}
+        data = {m: registry[m].__dict__ for m in models}
         print(json.dumps(data, indent=2))
         return 0
 
     print(f"\n{BOLD}{CYAN}=== Supported Models & Pricing (per 1M tokens) ==={RESET}")
-    header = f"{'MODEL':<20} {'PROVIDER':<14} {'INPUT ($)':<11} {'OUTPUT ($)':<12} {'CACHED ($)':<12} {'CONTEXT'}"
+    header = f"{'MODEL':<26} {'PROVIDER':<18} {'INPUT ($)':<11} {'OUTPUT ($)':<12} {'CACHED ($)':<12} {'CONTEXT'}"
     print(f"{BOLD}{header}{RESET}")
     print("-" * len(header))
 
     for m in models:
-        p = MODEL_REGISTRY[m]
+        p = registry[m]
         cached_str = f"${p.cached_input_per_m:.4f}" if p.cached_input_per_m is not None else "N/A"
         ctx_k = f"{p.context_window // 1000}k"
         print(
-            f"{p.name:<20} {p.provider:<14} ${p.input_per_m:<10.4f} ${p.output_per_m:<11.4f} "
+            f"{p.name:<26} {p.provider:<18} ${p.input_per_m:<10.4f} ${p.output_per_m:<11.4f} "
             f"{cached_str:<12} {ctx_k}"
         )
     print()
@@ -623,6 +723,7 @@ def build_parser() -> argparse.ArgumentParser:
     p_ana = subparsers.add_parser("analyze", help="Decompose prompt layers (system, history, tools, RAG) & inspect caching")
     p_ana.add_argument("target", nargs="?", default=None, help="Prompt text, file, or JSON chat transcript")
     p_ana.add_argument("-m", "--model", default="gpt-4o", help="Model to evaluate")
+    p_ana.add_argument("-o", "--output", help="Save context audit report to file (Markdown or JSON)")
     p_ana.add_argument("--json", action="store_true", help="Output in JSON format")
 
     # regression
@@ -631,6 +732,7 @@ def build_parser() -> argparse.ArgumentParser:
     p_reg.add_argument("candidate", help="Candidate prompt file or text")
     p_reg.add_argument("-m", "--model", default="gpt-4o", help="Model to evaluate")
     p_reg.add_argument("--max-regression-pct", type=float, default=15.0, help="Maximum allowed token growth percentage")
+    p_reg.add_argument("-o", "--output", help="Save regression report to file (Markdown or JSON)")
     p_reg.add_argument("--json", action="store_true", help="Output in JSON format")
 
     # diff
@@ -640,6 +742,7 @@ def build_parser() -> argparse.ArgumentParser:
     p_diff.add_argument("--exclude-generated", action="store_true", default=False, help="Exclude lockfiles and compiled code from review")
     p_diff.add_argument("--ignore-generated", action="store_true", default=False, help="Alias for --exclude-generated")
     p_diff.add_argument("-m", "--model", default="gpt-4o", help="Model to evaluate")
+    p_diff.add_argument("-o", "--output", help="Save git diff review report to file (Markdown or JSON)")
     p_diff.add_argument("--json", action="store_true", help="Output in JSON format")
 
     # trace
@@ -667,6 +770,7 @@ def build_parser() -> argparse.ArgumentParser:
     p_pack.add_argument("-m", "--model", default="gpt-4o", help="Model used for token calculation")
     p_pack.add_argument("--max-tokens", type=int, help="Maximum allowed token budget to include")
     p_pack.add_argument("--format", choices=["xml", "markdown"], default="xml", help="Packaging format (default: xml)")
+    p_pack.add_argument("--ignore", help="Comma-separated file patterns to ignore (e.g. '*.log,tests/*')")
     p_pack.add_argument("--json", action="store_true", help="Output summary in JSON format")
 
     # check
@@ -710,7 +814,14 @@ def build_parser() -> argparse.ArgumentParser:
     subparsers.add_parser("install-hook", help="Install git pre-commit budget guard hook")
 
     # models
-    p_models = subparsers.add_parser("models", help="List all supported models and prices")
+    p_models = subparsers.add_parser("models", help="List all supported models, query pricing, or register custom models")
+    p_models.add_argument("--add", help="Register a custom model name (e.g. my-finetune)")
+    p_models.add_argument("--provider", default="Custom", help="Provider name for custom model")
+    p_models.add_argument("--input", type=float, default=0.0, help="Input price per 1M tokens in USD")
+    p_models.add_argument("--output", type=float, default=0.0, help="Output price per 1M tokens in USD")
+    p_models.add_argument("--cached", type=float, default=None, help="Cached input price per 1M tokens in USD")
+    p_models.add_argument("--context", type=int, default=128000, help="Context window limit in tokens")
+    p_models.add_argument("--remove", help="Remove a previously registered custom model")
     p_models.add_argument("--json", action="store_true", help="Output in JSON format")
 
     return parser

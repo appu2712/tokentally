@@ -88,6 +88,7 @@ class TokentallyConfig:
     budget: BudgetConfig = field(default_factory=BudgetConfig)
     regression: RegressionConfig = field(default_factory=RegressionConfig)
     review: ReviewConfig = field(default_factory=ReviewConfig)
+    custom_models: Dict[str, Dict[str, Any]] = field(default_factory=dict)
     config_path: Optional[str] = None
 
 
@@ -135,10 +136,20 @@ def load_config(root_dir: Optional[str] = None) -> TokentallyConfig:
             exclude_generated=rev_raw.get("exclude_generated", True),
         )
 
+        custom_models: Dict[str, Dict[str, Any]] = {}
+        if "custom_models" in raw and isinstance(raw["custom_models"], dict):
+            custom_models = raw["custom_models"]
+        # Handle flattened sections from simple parser, e.g. "custom_models.my_model"
+        for k, v in raw.items():
+            if k.startswith("custom_models.") and isinstance(v, dict):
+                m_name = k.split(".", 1)[1]
+                custom_models[m_name] = v
+
         return TokentallyConfig(
             budget=budget,
             regression=regression,
             review=review,
+            custom_models=custom_models,
             config_path=str(cfg_file),
         )
     except Exception:
