@@ -8,21 +8,22 @@ version = "0.1.0"
 authors = [
   { name = "Aprameya Acharya" }
 ]
-description = "Blazingly fast token counter, multi-model cost estimator, codebase packer, and CI/CD budget guardrail for OpenAI, Claude, Gemini, and DeepSeek."
+description = "AI resource optimization and FinOps layer: exact multi-model token counting, cost estimation, prompt decomposition, cache analysis, and CI/CD guardrails."
 readme = "README.md"
 requires-python = ">=3.9"
-license = { text = "MIT" }
+license = "MIT"
 keywords = [
   "token-counter",
   "llm-cost",
+  "ai-finops",
+  "prompt-caching",
   "openai",
-  "gpt-4o",
-  "o1",
-  "o3-mini",
-  "claude",
-  "gemini",
+  "gpt-5",
+  "claude-4",
+  "gemini-4",
   "deepseek",
-  "repomix",
+  "llama-4",
+  "mcp-server",
   "prompt-budget",
   "ci-cd-guardrail"
 ]
@@ -30,7 +31,6 @@ classifiers = [
   "Development Status :: 4 - Beta",
   "Intended Audience :: Developers",
   "Intended Audience :: Science/Research",
-  "License :: OSI Approved :: MIT License",
   "Programming Language :: Python :: 3",
   "Programming Language :: Python :: 3.9",
   "Programming Language :: Python :: 3.10",
