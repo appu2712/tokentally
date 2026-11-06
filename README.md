@@ -357,46 +357,57 @@ def call_agent_pipeline(query: str):
 
 ## Supported Models & Pricing Matrix (USD per 1M tokens)
 
-| Model Identifier | Provider | Input ($) | Output ($) | Cached ($) | Context Window |
-| :--- | :--- | :--- | :--- | :--- | :--- |
-| **gemini-4-argon** | Google | \$1.5000 | \$6.0000 | \$0.3750 | 2000k |
-| **gemini-4-argon-thinking** | Google | \$0.3500 | \$1.4000 | \$0.0875 | 2000k |
-| **gemini-4-argon-flash** | Google | \$0.1200 | \$0.4800 | \$0.0300 | 2000k |
-| **gemini-3.8** | Google | \$1.2500 | \$5.0000 | \$0.3125 | 2000k |
-| **gemini-3.8-flash** | Google | \$0.1000 | \$0.4000 | \$0.0250 | 2000k |
-| **gemini-3.8-live** | Google | \$0.1500 | \$0.6000 | \$0.0375 | 1000k |
-| **gemini-3.8-live-thinking** | Google | \$0.3000 | \$1.2000 | \$0.0750 | 1000k |
-| **claude-4-sonnet** | Anthropic | \$3.0000 | \$15.0000 | \$0.3000 | 300k |
-| **claude-4-opus** | Anthropic | \$15.0000 | \$75.0000 | \$1.5000 | 300k |
-| **claude-3-8-sonnet** | Anthropic | \$3.0000 | \$15.0000 | \$0.3000 | 200k |
-| **claude-3-7-sonnet** | Anthropic | \$3.0000 | \$15.0000 | \$0.3000 | 200k |
-| **claude-3-5-sonnet** | Anthropic | \$3.0000 | \$15.0000 | \$0.3000 | 200k |
-| **claude-3-5-haiku** | Anthropic | \$0.8000 | \$4.0000 | \$0.0800 | 200k |
-| **gpt-5** | OpenAI | \$15.0000 | \$60.0000 | \$7.5000 | 256k |
-| **gpt-astra** | OpenAI | \$10.0000 | \$40.0000 | \$2.5000 | 256k |
-| **gpt-luma** | OpenAI | \$2.5000 | \$10.0000 | \$1.2500 | 128k |
-| **gpt-sol** | OpenAI | \$0.2000 | \$0.8000 | \$0.0500 | 128k |
-| **gpt-4.5** | OpenAI | \$75.0000 | \$150.0000 | \$37.5000 | 128k |
-| **gpt-4o** | OpenAI | \$2.5000 | \$10.0000 | \$1.2500 | 128k |
-| **gpt-4o-mini** | OpenAI | \$0.1500 | \$0.6000 | \$0.0750 | 128k |
-| **o4** | OpenAI | \$10.0000 | \$40.0000 | \$5.0000 | 256k |
-| **o3** | OpenAI | \$10.0000 | \$40.0000 | \$5.0000 | 200k |
-| **o3-pro** | OpenAI | \$20.0000 | \$80.0000 | \$10.0000 | 200k |
-| **o3-mini** | OpenAI | \$1.1000 | \$4.4000 | \$0.5500 | 200k |
-| **o1** | OpenAI | \$15.0000 | \$60.0000 | \$7.5000 | 200k |
-| **grok-3** | xAI | \$3.0000 | \$15.0000 | \$0.7500 | 131k |
-| **grok-3-mini** | xAI | \$0.3000 | \$1.5000 | \$0.0750 | 131k |
-| **deepseek-v3** | DeepSeek | \$0.1400 | \$0.2800 | \$0.0140 | 64k |
-| **deepseek-r1** | DeepSeek | \$0.5500 | \$2.1900 | \$0.1400 | 64k |
-| **mistral-saba** | Mistral | \$0.2000 | \$0.6000 | N/A | 32k |
-| **pixtral-large** | Mistral | \$2.0000 | \$6.0000 | N/A | 128k |
-| **codestral-2501** | Mistral | \$0.3000 | \$0.9000 | N/A | 256k |
-| **qwen-2.5-max** | Alibaba / Open | \$1.6000 | \$6.4000 | N/A | 128k |
-| **llama-3.3-70b** | Meta / Open | \$0.7000 | \$0.8000 | N/A | 128k |
-| **llama-3.2-90b-vision** | Meta / Open | \$0.9000 | \$0.9000 | N/A | 128k |
-| **bedrock-claude-3-7-sonnet** | AWS Bedrock | \$3.0000 | \$15.0000 | \$0.3000 | 200k |
-| **ollama-local** | Ollama | \$0.0000 | \$0.0000 | \$0.0000 | 128k |
-| **vllm-local** | vLLM | \$0.0000 | \$0.0000 | \$0.0000 | 128k |
+Tokentally includes built-in canonical pricing across all major global AI labs and infrastructure providers:
+
+| Model Identifier | Provider | Input ($) | Output ($) | Cached ($) | Context Window | Description / Tier |
+| :--- | :--- | :--- | :--- | :--- | :--- | :--- |
+| **gemini-4-argon** | Google | \$1.5000 | \$6.0000 | \$0.3750 | 2000k | Next-gen Argon multimodal architecture |
+| **gemini-4-argon-thinking** | Google | \$0.3500 | \$1.4000 | \$0.0875 | 2000k | Argon deep verification traces |
+| **gemini-4-argon-flash** | Google | \$0.1200 | \$0.4800 | \$0.0300 | 2000k | High-throughput low-latency model |
+| **gemini-3.8** | Google | \$1.2500 | \$5.0000 | \$0.3125 | 2000k | 2M token multimodal foundation |
+| **gemini-3.8-flash** | Google | \$0.1000 | \$0.4000 | \$0.0250 | 2000k | High-efficiency workhorse model |
+| **gemini-3.8-live** | Google | \$0.1500 | \$0.6000 | \$0.0375 | 1000k | Real-time WebSocket audio/video stream |
+| **gemini-3.8-live-thinking**| Google | \$0.3000 | \$1.2000 | \$0.0750 | 1000k | Live background reasoning dialogue |
+| **gpt-5** | OpenAI | \$15.0000 | \$60.0000 | \$7.5000 | 256k | Next-generation foundation model |
+| **gpt-astra** | OpenAI | \$10.0000 | \$40.0000 | \$2.5000 | 256k | Autonomous multi-step orchestration |
+| **gpt-luma** | OpenAI | \$2.5000 | \$10.0000 | \$1.2500 | 128k | High-throughput multimodal agent model |
+| **gpt-sol** | OpenAI | \$0.2000 | \$0.8000 | \$0.0500 | 128k | Ultra-low cost edge daily reasoning |
+| **o4** | OpenAI | \$10.0000 | \$40.0000 | \$5.0000 | 256k | Next-gen deep reasoning model |
+| **o3** | OpenAI | \$10.0000 | \$40.0000 | \$5.0000 | 200k | Flagship STEM and coding reasoning |
+| **gpt-4o** | OpenAI | \$2.5000 | \$10.0000 | \$1.2500 | 128k | Flagship multimodal workhorse |
+| **claude-4-sonnet** | Anthropic | \$3.0000 | \$15.0000 | \$0.3000 | 300k | 4th-gen flagship coding and agents |
+| **claude-4-opus** | Anthropic | \$15.0000 | \$75.0000 | \$1.5000 | 300k | Frontier compute research architecture |
+| **claude-3-8-sonnet** | Anthropic | \$3.0000 | \$15.0000 | \$0.3000 | 200k | Adaptive reasoning token accounting |
+| **claude-3-7-sonnet** | Anthropic | \$3.0000 | \$15.0000 | \$0.3000 | 200k | Standard & extended thinking model |
+| **claude-3-5-haiku** | Anthropic | \$0.8000 | \$4.0000 | \$0.0800 | 200k | Lightweight high-speed responsive model |
+| **llama-4-behemoth** | Meta / Open | \$2.0000 | \$2.0000 | N/A | 256k | 400B+ open frontier foundation |
+| **llama-4-maverick** | Meta / Open | \$0.7000 | \$0.8000 | N/A | 256k | Flagship open coding & reasoning |
+| **llama-4-scout** | Meta / Open | \$0.1500 | \$0.1500 | N/A | 128k | High-speed multimodal vision model |
+| **deepseek-v4** | DeepSeek | \$0.1800 | \$0.3600 | \$0.0180 | 128k | 4th-gen high-efficiency MoE model |
+| **deepseek-r2** | DeepSeek | \$0.6500 | \$2.4000 | \$0.1600 | 128k | 2nd-gen reasoning with verifiable CoT |
+| **deepseek-coder-v3** | DeepSeek | \$0.1400 | \$0.2800 | \$0.0140 | 128k | Repository-level code synthesis |
+| **grok-3.5** | xAI | \$3.0000 | \$15.0000 | \$0.7500 | 200k | Next-gen flagship intelligence |
+| **grok-3-deepsearch** | xAI | \$5.0000 | \$25.0000 | \$1.2500 | 200k | Autonomous agentic web deep research |
+| **grok-3-mini** | xAI | \$0.3000 | \$1.5000 | \$0.0750 | 131k | Fast reasoning model |
+| **mistral-large-3** | Mistral | \$2.0000 | \$6.0000 | N/A | 128k | 3rd-generation flagship reasoning |
+| **devstral** | Mistral | \$0.3000 | \$0.9000 | N/A | 256k | Specialized agentic software engineering |
+| **codestral-2501** | Mistral | \$0.3000 | \$0.9000 | N/A | 256k | 256k fill-in-the-middle code model |
+| **phi-4** | Microsoft | \$0.0700 | \$0.1400 | N/A | 128k | 14B state-of-the-art small language model |
+| **phi-4-mini** | Microsoft | \$0.0300 | \$0.0600 | N/A | 128k | 3.8B ultra-fast lightweight SLM |
+| **phi-4-multimodal** | Microsoft | \$0.1000 | \$0.2000 | N/A | 128k | Multimodal audio & vision SLM |
+| **apple-pcc-server** | Apple | \$0.2500 | \$1.0000 | N/A | 128k | Private Cloud Compute on Apple silicon |
+| **apple-intelligence-local**| Apple | \$0.0000 | \$0.0000 | \$0.0000 | 128k | On-device Apple AFM 3B model |
+| **command-a** | Cohere | \$1.5000 | \$6.0000 | \$0.3750 | 256k | Enterprise agentic tool model |
+| **command-r7b** | Cohere | \$0.0375 | \$0.1500 | \$0.0188 | 128k | Ultra-efficient multilingual enterprise |
+| **qwen-3-max** | Alibaba / Open | \$1.6000 | \$6.4000 | N/A | 256k | 3rd-generation frontier dense model |
+| **qwen-3-coder-32b** | Alibaba / Open | \$0.2000 | \$0.2000 | N/A | 256k | Specialized high-capability open coder |
+| **bedrock-nova-premier** | AWS Bedrock | \$2.0000 | \$8.0000 | \$0.5000 | 300k | Premier frontier multimodal model |
+| **ernie-4.0-turbo** | Baidu | \$0.4000 | \$1.2000 | N/A | 128k | Enterprise multilingual & Chinese model |
+| **falcon-3-40b** | TII Falcon / Open | \$0.3000 | \$0.3000 | N/A | 128k | 40B open weights foundation model |
+| **groq-deepseek-r1** | Groq | \$0.7500 | \$0.9900 | N/A | 128k | Ultra-high throughput LPU DeepSeek R1 |
+| **cerebras-deepseek-r1** | Cerebras | \$0.7000 | \$0.7000 | N/A | 128k | Sub-second wafer-scale DeepSeek R1 |
+| **ollama-local** | Ollama | \$0.0000 | \$0.0000 | \$0.0000 | 128k | Local on-device via Ollama / llama.cpp |
+| **vllm-local** | vLLM | \$0.0000 | \$0.0000 | \$0.0000 | 128k | Self-hosted PagedAttention inference |
 
 ### Adaptive Heuristic Tier Engine (Future-Proof Fallback)
 

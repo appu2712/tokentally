@@ -158,6 +158,82 @@ class TestCalculator(unittest.TestCase):
         self.assertEqual(p_o4.input_per_m, 10.00)
         self.assertEqual(p_o4.output_per_m, 40.00)
 
+    def test_global_organizations_frontier_2026(self):
+        # Meta LLaMA 4
+        p_mav = get_model_pricing("llama-4-maverick")
+        self.assertEqual(p_mav.input_per_m, 0.70)
+        self.assertEqual(p_mav.context_window, 256000)
+        p_beh = get_model_pricing("llama-4-behemoth")
+        self.assertEqual(p_beh.input_per_m, 2.00)
+        p_scout = get_model_pricing("llama-4-scout")
+        self.assertEqual(p_scout.input_per_m, 0.15)
+
+        # DeepSeek V4 & R2
+        p_v4 = get_model_pricing("deepseek-v4")
+        self.assertEqual(p_v4.input_per_m, 0.18)
+        self.assertEqual(p_v4.output_per_m, 0.36)
+        p_r2 = get_model_pricing("deepseek-r2")
+        self.assertEqual(p_r2.input_per_m, 0.65)
+        self.assertEqual(p_r2.cached_input_per_m, 0.16)
+
+        # xAI Grok 3.5 & DeepSearch
+        p_grok35 = get_model_pricing("grok-3.5")
+        self.assertEqual(p_grok35.input_per_m, 3.00)
+        p_deepsearch = get_model_pricing("grok-3-deepsearch")
+        self.assertEqual(p_deepsearch.input_per_m, 5.00)
+        self.assertEqual(p_deepsearch.output_per_m, 25.00)
+
+        # Mistral Devstral & Large 3
+        p_devstral = get_model_pricing("devstral")
+        self.assertEqual(p_devstral.input_per_m, 0.30)
+        p_mlarge3 = get_model_pricing("mistral-large-3")
+        self.assertEqual(p_mlarge3.input_per_m, 2.00)
+
+        # Microsoft Phi-4
+        p_phi4 = get_model_pricing("phi-4")
+        self.assertEqual(p_phi4.provider, "Microsoft")
+        self.assertEqual(p_phi4.input_per_m, 0.07)
+        self.assertEqual(p_phi4.output_per_m, 0.14)
+
+        # Apple Private Cloud Compute & On-Device
+        p_pcc = get_model_pricing("apple-pcc-server")
+        self.assertEqual(p_pcc.provider, "Apple")
+        self.assertEqual(p_pcc.input_per_m, 0.25)
+        p_aon = get_model_pricing("apple-intelligence-local")
+        self.assertEqual(p_aon.input_per_m, 0.00)
+        self.assertTrue(p_aon.is_local)
+
+        # Cohere Command A & Command R7B
+        p_cmda = get_model_pricing("command-a")
+        self.assertEqual(p_cmda.input_per_m, 1.50)
+        p_cmdr7b = get_model_pricing("command-r7b")
+        self.assertEqual(p_cmdr7b.input_per_m, 0.0375)
+
+        # Alibaba Qwen 3
+        p_qw3 = get_model_pricing("qwen-3-max")
+        self.assertEqual(p_qw3.input_per_m, 1.60)
+        p_qw3_coder = get_model_pricing("qwen-3-coder-32b")
+        self.assertEqual(p_qw3_coder.input_per_m, 0.20)
+
+        # AWS Bedrock Nova Premier
+        p_nova_prem = get_model_pricing("bedrock-nova-premier")
+        self.assertEqual(p_nova_prem.input_per_m, 2.00)
+
+        # Baidu Ernie
+        p_ernie = get_model_pricing("ernie-4.0-turbo")
+        self.assertEqual(p_ernie.provider, "Baidu")
+        self.assertEqual(p_ernie.input_per_m, 0.40)
+
+        # TII Falcon 3
+        p_falcon = get_model_pricing("falcon-3-40b")
+        self.assertEqual(p_falcon.input_per_m, 0.30)
+
+        # Hosted LPUs: Groq & Cerebras DeepSeek R1
+        p_groq_r1 = get_model_pricing("groq-deepseek-r1")
+        self.assertEqual(p_groq_r1.input_per_m, 0.75)
+        p_cs_r1 = get_model_pricing("cerebras-deepseek-r1")
+        self.assertEqual(p_cs_r1.input_per_m, 0.70)
+
     def test_adaptive_heuristic_tier_inference(self):
         # Uncataloged future models dynamically infer tier without raising KeyError
         inferred_g5 = get_model_pricing("gemini-5-pro")

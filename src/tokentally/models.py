@@ -421,6 +421,33 @@ _BUILTIN_REGISTRY: Dict[str, ModelPricing] = {
     ),
 
     # xAI Grok
+    "grok-3.5": ModelPricing(
+        provider="xAI",
+        name="grok-3.5",
+        input_per_m=3.00,
+        output_per_m=15.00,
+        cached_input_per_m=0.75,
+        context_window=200000,
+        description="xAI next-generation flagship frontier intelligence and coding model",
+    ),
+    "grok-3.5-mini": ModelPricing(
+        provider="xAI",
+        name="grok-3.5-mini",
+        input_per_m=0.30,
+        output_per_m=1.50,
+        cached_input_per_m=0.075,
+        context_window=200000,
+        description="High-speed lightweight reasoning model by xAI",
+    ),
+    "grok-3-deepsearch": ModelPricing(
+        provider="xAI",
+        name="grok-3-deepsearch",
+        input_per_m=5.00,
+        output_per_m=25.00,
+        cached_input_per_m=1.25,
+        context_window=200000,
+        description="xAI autonomous agentic web search and deep research synthesis model",
+    ),
     "grok-3": ModelPricing(
         provider="xAI",
         name="grok-3",
@@ -457,7 +484,35 @@ _BUILTIN_REGISTRY: Dict[str, ModelPricing] = {
         context_window=131072,
         description="Compact xAI inference model for low-latency queries",
     ),
-        # DeepSeek
+
+    # DeepSeek
+    "deepseek-v4": ModelPricing(
+        provider="DeepSeek",
+        name="deepseek-v4",
+        input_per_m=0.18,
+        output_per_m=0.36,
+        cached_input_per_m=0.018,
+        context_window=128000,
+        description="DeepSeek 4th-generation frontier MoE foundation model",
+    ),
+    "deepseek-r2": ModelPricing(
+        provider="DeepSeek",
+        name="deepseek-r2",
+        input_per_m=0.65,
+        output_per_m=2.40,
+        cached_input_per_m=0.16,
+        context_window=128000,
+        description="DeepSeek 2nd-generation deep reasoning model with verifiable chain-of-thought",
+    ),
+    "deepseek-coder-v3": ModelPricing(
+        provider="DeepSeek",
+        name="deepseek-coder-v3",
+        input_per_m=0.14,
+        output_per_m=0.28,
+        cached_input_per_m=0.014,
+        context_window=128000,
+        description="Specialized high-efficiency code generation and repository synthesis",
+    ),
     "deepseek-v3": ModelPricing(
         provider="DeepSeek",
         name="deepseek-v3",
@@ -478,6 +533,42 @@ _BUILTIN_REGISTRY: Dict[str, ModelPricing] = {
     ),
 
     # Mistral AI
+    "mistral-large-3": ModelPricing(
+        provider="Mistral",
+        name="mistral-large-3",
+        input_per_m=2.00,
+        output_per_m=6.00,
+        cached_input_per_m=None,
+        context_window=128000,
+        description="Mistral 3rd-generation flagship frontier model for reasoning and coding",
+    ),
+    "devstral": ModelPricing(
+        provider="Mistral",
+        name="devstral",
+        input_per_m=0.30,
+        output_per_m=0.90,
+        cached_input_per_m=None,
+        context_window=256000,
+        description="Specialized agentic software engineering and repo-level coding model",
+    ),
+    "ministral-8b": ModelPricing(
+        provider="Mistral",
+        name="ministral-8b",
+        input_per_m=0.10,
+        output_per_m=0.10,
+        cached_input_per_m=None,
+        context_window=128000,
+        description="Mistral edge on-device 8B parameter model",
+    ),
+    "ministral-3b": ModelPricing(
+        provider="Mistral",
+        name="ministral-3b",
+        input_per_m=0.04,
+        output_per_m=0.04,
+        cached_input_per_m=None,
+        context_window=128000,
+        description="Ultra-compact 3B edge model for local and low-latency inference",
+    ),
     "mistral-saba": ModelPricing(
         provider="Mistral",
         name="mistral-saba",
@@ -543,6 +634,24 @@ _BUILTIN_REGISTRY: Dict[str, ModelPricing] = {
     ),
 
     # Groq / Cerebras Hosted LPUs (Per million tokens)
+    "groq-deepseek-r1": ModelPricing(
+        provider="Groq",
+        name="groq-deepseek-r1",
+        input_per_m=0.75,
+        output_per_m=0.99,
+        cached_input_per_m=None,
+        context_window=128000,
+        description="Ultra-high throughput LPU hosted DeepSeek R1 reasoning model",
+    ),
+    "cerebras-deepseek-r1": ModelPricing(
+        provider="Cerebras",
+        name="cerebras-deepseek-r1",
+        input_per_m=0.70,
+        output_per_m=0.70,
+        cached_input_per_m=None,
+        context_window=128000,
+        description="Sub-second wafer-scale engine inference for DeepSeek R1",
+    ),
     "groq-llama-3.3-70b": ModelPricing(
         provider="Groq",
         name="groq-llama-3.3-70b",
@@ -583,6 +692,24 @@ _BUILTIN_REGISTRY: Dict[str, ModelPricing] = {
     ),
 
     # Cohere
+    "command-a": ModelPricing(
+        provider="Cohere",
+        name="command-a",
+        input_per_m=1.50,
+        output_per_m=6.00,
+        cached_input_per_m=0.375,
+        context_window=256000,
+        description="Cohere flagship enterprise agentic action and multi-step tool model",
+    ),
+    "command-r7b": ModelPricing(
+        provider="Cohere",
+        name="command-r7b",
+        input_per_m=0.0375,
+        output_per_m=0.15,
+        cached_input_per_m=0.01875,
+        context_window=128000,
+        description="Cohere ultra-efficient multilingual enterprise workhorse model",
+    ),
     "command-r": ModelPricing(
         provider="Cohere",
         name="command-r",
@@ -603,6 +730,15 @@ _BUILTIN_REGISTRY: Dict[str, ModelPricing] = {
     ),
 
     # AWS Bedrock
+    "bedrock-nova-premier": ModelPricing(
+        provider="AWS Bedrock",
+        name="bedrock-nova-premier",
+        input_per_m=2.00,
+        output_per_m=8.00,
+        cached_input_per_m=0.50,
+        context_window=300000,
+        description="Amazon Bedrock premier frontier multimodal reasoning model",
+    ),
     "bedrock-claude-3-7-sonnet": ModelPricing(
         provider="AWS Bedrock",
         name="bedrock-claude-3-7-sonnet",
@@ -650,6 +786,42 @@ _BUILTIN_REGISTRY: Dict[str, ModelPricing] = {
     ),
 
     # Alibaba Qwen
+    "qwen-3-max": ModelPricing(
+        provider="Alibaba / Open",
+        name="qwen-3-max",
+        input_per_m=1.60,
+        output_per_m=6.40,
+        cached_input_per_m=None,
+        context_window=256000,
+        description="Qwen 3rd-generation frontier dense model matching leading benchmarks",
+    ),
+    "qwen-3-coder-72b": ModelPricing(
+        provider="Alibaba / Open",
+        name="qwen-3-coder-72b",
+        input_per_m=0.35,
+        output_per_m=0.40,
+        cached_input_per_m=None,
+        context_window=256000,
+        description="Qwen 3 flagship open coding model with 256k context",
+    ),
+    "qwen-3-coder-32b": ModelPricing(
+        provider="Alibaba / Open",
+        name="qwen-3-coder-32b",
+        input_per_m=0.20,
+        output_per_m=0.20,
+        cached_input_per_m=None,
+        context_window=256000,
+        description="Qwen 3 specialized high-capability code generation model",
+    ),
+    "qwen-vl-max": ModelPricing(
+        provider="Alibaba / Open",
+        name="qwen-vl-max",
+        input_per_m=1.60,
+        output_per_m=6.40,
+        cached_input_per_m=None,
+        context_window=128000,
+        description="Qwen flagship vision-language multimodal foundation model",
+    ),
     "qwen-2.5-max": ModelPricing(
         provider="Alibaba / Open",
         name="qwen-2.5-max",
@@ -678,7 +850,34 @@ _BUILTIN_REGISTRY: Dict[str, ModelPricing] = {
         description="General open-weights flagship multilingual model",
     ),
 
-    # Meta LLaMA 3.3, 3.2, 3.1
+    # Meta LLaMA 4, 3.3, 3.2, 3.1
+    "llama-4-behemoth": ModelPricing(
+        provider="Meta / Open",
+        name="llama-4-behemoth",
+        input_per_m=2.00,
+        output_per_m=2.00,
+        cached_input_per_m=None,
+        context_window=256000,
+        description="Meta LLaMA 4 400B+ open frontier foundation architecture",
+    ),
+    "llama-4-maverick": ModelPricing(
+        provider="Meta / Open",
+        name="llama-4-maverick",
+        input_per_m=0.70,
+        output_per_m=0.80,
+        cached_input_per_m=None,
+        context_window=256000,
+        description="Meta LLaMA 4 flagship open weights frontier coding and reasoning model",
+    ),
+    "llama-4-scout": ModelPricing(
+        provider="Meta / Open",
+        name="llama-4-scout",
+        input_per_m=0.15,
+        output_per_m=0.15,
+        cached_input_per_m=None,
+        context_window=128000,
+        description="Meta LLaMA 4 high-speed multimodal vision-language model",
+    ),
     "llama-3.3-70b": ModelPricing(
         provider="Meta / Open",
         name="llama-3.3-70b",
@@ -741,6 +940,87 @@ _BUILTIN_REGISTRY: Dict[str, ModelPricing] = {
         cached_input_per_m=None,
         context_window=128000,
         description="Lightweight 8B open model for local or micro-instance deployment",
+    ),
+
+    # Microsoft Phi Family
+    "phi-4": ModelPricing(
+        provider="Microsoft",
+        name="phi-4",
+        input_per_m=0.07,
+        output_per_m=0.14,
+        cached_input_per_m=None,
+        context_window=128000,
+        description="Microsoft Phi-4 14B state-of-the-art small language model with synthetic data reasoning",
+    ),
+    "phi-4-mini": ModelPricing(
+        provider="Microsoft",
+        name="phi-4-mini",
+        input_per_m=0.03,
+        output_per_m=0.06,
+        cached_input_per_m=None,
+        context_window=128000,
+        description="Microsoft Phi-4 Mini 3.8B ultra-fast lightweight model",
+    ),
+    "phi-4-multimodal": ModelPricing(
+        provider="Microsoft",
+        name="phi-4-multimodal",
+        input_per_m=0.10,
+        output_per_m=0.20,
+        cached_input_per_m=None,
+        context_window=128000,
+        description="Microsoft Phi-4 multimodal vision and speech foundation model",
+    ),
+
+    # Apple (Apple Intelligence & Private Cloud Compute)
+    "apple-pcc-server": ModelPricing(
+        provider="Apple",
+        name="apple-pcc-server",
+        input_per_m=0.25,
+        output_per_m=1.00,
+        cached_input_per_m=None,
+        context_window=128000,
+        description="Apple Private Cloud Compute foundation model hosted on Apple silicon servers",
+    ),
+    "apple-intelligence-local": ModelPricing(
+        provider="Apple",
+        name="apple-intelligence-local",
+        input_per_m=0.00,
+        output_per_m=0.00,
+        cached_input_per_m=0.00,
+        context_window=128000,
+        description="Apple on-device AFM 3B model (zero per-token API cost)",
+        is_local=True,
+    ),
+
+    # Baidu Ernie
+    "ernie-4.0-turbo": ModelPricing(
+        provider="Baidu",
+        name="ernie-4.0-turbo",
+        input_per_m=0.40,
+        output_per_m=1.20,
+        cached_input_per_m=None,
+        context_window=128000,
+        description="Baidu Ernie 4.0 Turbo enterprise multilingual and Chinese foundation model",
+    ),
+
+    # TII Falcon
+    "falcon-3-40b": ModelPricing(
+        provider="TII Falcon / Open",
+        name="falcon-3-40b",
+        input_per_m=0.30,
+        output_per_m=0.30,
+        cached_input_per_m=None,
+        context_window=128000,
+        description="TII Falcon 3 40B open weights frontier foundation model",
+    ),
+    "falcon-3-10b": ModelPricing(
+        provider="TII Falcon / Open",
+        name="falcon-3-10b",
+        input_per_m=0.08,
+        output_per_m=0.08,
+        cached_input_per_m=None,
+        context_window=128000,
+        description="TII Falcon 3 10B high-efficiency open model",
     ),
 
     # Ollama / Local Models (Zero dollar inference cost)
@@ -808,8 +1088,31 @@ MODEL_ALIASES = {
     "grok-mini": "grok-3-mini",
     "deepseek": "deepseek-v3",
     "r1": "deepseek-r1",
-    "mistral": "mistral-large",
+    "deepseek-4": "deepseek-v4",
+    "v4": "deepseek-v4",
+    "r2": "deepseek-r2",
+    "deepseek-r2": "deepseek-r2",
+    "grok-3.5": "grok-3.5",
+    "grok3.5": "grok-3.5",
+    "deepsearch": "grok-3-deepsearch",
+    "devstral": "devstral",
+    "mistral": "mistral-large-3",
     "saba": "mistral-saba",
+    "llama-4": "llama-4-maverick",
+    "llama4": "llama-4-maverick",
+    "maverick": "llama-4-maverick",
+    "behemoth": "llama-4-behemoth",
+    "scout": "llama-4-scout",
+    "phi-4": "phi-4",
+    "phi4": "phi-4",
+    "phi": "phi-4",
+    "ernie": "ernie-4.0-turbo",
+    "falcon": "falcon-3-40b",
+    "command-a": "command-a",
+    "nova-premier": "bedrock-nova-premier",
+    "apple": "apple-pcc-server",
+    "qwen-3": "qwen-3-max",
+    "qwen3": "qwen-3-max",
     "cohere": "command-r",
     "command": "command-r",
     "qwen": "qwen-2.5-coder-32b",
@@ -1084,6 +1387,14 @@ def infer_model_pricing(model_name: str) -> Optional[ModelPricing]:
         provider = "Cohere"
     elif "bedrock" in cleaned or "nova" in cleaned:
         provider = "AWS Bedrock"
+    elif "phi" in cleaned or "microsoft" in cleaned:
+        provider = "Microsoft"
+    elif "apple" in cleaned:
+        provider = "Apple"
+    elif "ernie" in cleaned or "baidu" in cleaned:
+        provider = "Baidu"
+    elif "falcon" in cleaned or "tii" in cleaned:
+        provider = "TII Falcon / Open"
 
     # If provider is completely unrecognized, only infer if there is an explicit AI/LLM keyword
     if provider == "Generic Provider":
@@ -1110,6 +1421,10 @@ def infer_model_pricing(model_name: str) -> Optional[ModelPricing]:
             in_cost, out_cost, cached, ctx = 0.30, 1.50, 0.075, 131072
         elif provider == "Meta / Open":
             in_cost, out_cost, cached, ctx = 0.05, 0.05, None, 128000
+        elif provider == "Microsoft":
+            in_cost, out_cost, cached, ctx = 0.03, 0.06, None, 128000
+        elif provider == "Apple":
+            in_cost, out_cost, cached, ctx = 0.00, 0.00, 0.00, 128000
         else:
             in_cost, out_cost, cached, ctx = 0.15, 0.60, 0.05, 128000
     elif is_reasoning:
@@ -1138,6 +1453,14 @@ def infer_model_pricing(model_name: str) -> Optional[ModelPricing]:
             in_cost, out_cost, cached, ctx = 0.14, 0.28, 0.014, 64000
         elif provider == "Meta / Open":
             in_cost, out_cost, cached, ctx = 0.70, 0.80, None, 128000
+        elif provider == "Microsoft":
+            in_cost, out_cost, cached, ctx = 0.07, 0.14, None, 128000
+        elif provider == "Apple":
+            in_cost, out_cost, cached, ctx = 0.25, 1.00, None, 128000
+        elif provider == "Baidu":
+            in_cost, out_cost, cached, ctx = 0.40, 1.20, None, 128000
+        elif provider == "TII Falcon / Open":
+            in_cost, out_cost, cached, ctx = 0.30, 0.30, None, 128000
         else:
             in_cost, out_cost, cached, ctx = 2.00, 8.00, 1.00, 128000
 

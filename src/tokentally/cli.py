@@ -692,7 +692,7 @@ def handle_models(args: argparse.Namespace) -> int:
     search_q = getattr(args, "search", None)
     provider_q = getattr(args, "provider", None)
     limit = getattr(args, "limit", None)
-    if limit is None and not search_q and not provider_q and not getattr(args, "all", False):
+    if limit is None and not search_q and not provider_q and not getattr(args, "all", False) and not args.json:
         limit = 50
 
     registry = get_full_registry()
