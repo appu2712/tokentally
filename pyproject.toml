@@ -59,11 +59,11 @@ dev = [
 tokentally = "tokentally.cli:main"
 
 [project.urls]
-Homepage = "https://github.com/apra-acharya/tokentally"
-Documentation = "https://github.com/apra-acharya/tokentally#readme"
-Repository = "https://github.com/apra-acharya/tokentally.git"
-Issues = "https://github.com/apra-acharya/tokentally/issues"
-Changelog = "https://github.com/apra-acharya/tokentally/releases"
+Homepage = "https://github.com/appu2712/tokentally"
+Documentation = "https://github.com/appu2712/tokentally#readme"
+Repository = "https://github.com/appu2712/tokentally.git"
+Issues = "https://github.com/appu2712/tokentally/issues"
+Changelog = "https://github.com/appu2712/tokentally/releases"
 
 [tool.setuptools.packages.find]
 where = ["src"]

@@ -6,7 +6,7 @@ Thank you for your interest in contributing to **TokenTally**! We welcome commun
 
 1. **Fork and Clone the Repository**:
    ```bash
-   git clone https://github.com/apra-acharya/tokentally.git
+   git clone https://github.com/appu2712/tokentally.git
    cd tokentally
    ```
 

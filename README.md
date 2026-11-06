@@ -7,9 +7,9 @@
 [![PyPI Version](https://img.shields.io/pypi/v/tokentally.svg?color=blue)](https://pypi.org/project/tokentally/)
 [![Python Versions](https://img.shields.io/pypi/pyversions/tokentally.svg)](https://pypi.org/project/tokentally/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-green.svg)](https://opensource.org/licenses/MIT)
-[![CI Pipeline](https://github.com/apra-acharya/tokentally/actions/workflows/ci.yml/badge.svg)](https://github.com/apra-acharya/tokentally/actions)
+[![CI Pipeline](https://github.com/appu2712/tokentally/actions/workflows/ci.yml/badge.svg)](https://github.com/appu2712/tokentally/actions)
 [![Downloads](https://img.shields.io/pypi/dm/tokentally.svg)](https://pypistats.org/packages/tokentally)
-[![GitHub Stars](https://img.shields.io/github/stars/apra-acharya/tokentally?style=social)](https://github.com/apra-acharya/tokentally)
+[![GitHub Stars](https://img.shields.io/github/stars/appu2712/tokentally?style=social)](https://github.com/appu2712/tokentally)
 
 </div>
 
