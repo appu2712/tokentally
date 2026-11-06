@@ -20,6 +20,14 @@ class TestOptimizer(unittest.TestCase):
         self.assertNotIn("# This is a comment", res.optimized_text)
         self.assertIn("def add(a, b):", res.optimized_text)
 
+    def test_constraint_invariance_preservation(self):
+        prompt = "You are a database bot. You must not drop tables and never delete records.\n\n\n\nFollow instructions."
+        res = optimize_prompt(prompt)
+        self.assertTrue(res.invariance_passed)
+        self.assertEqual(len(res.invariance_warnings), 0)
+        self.assertIn("must not", res.optimized_text)
+        self.assertIn("never", res.optimized_text)
+
 
 if __name__ == "__main__":
     unittest.main()

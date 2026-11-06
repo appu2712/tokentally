@@ -52,6 +52,27 @@ class TestCLI(unittest.TestCase):
         self.assertEqual(ret, 1)
         self.assertIn('"passed": false', f.getvalue())
 
+    def test_cli_analyze(self):
+        f = io.StringIO()
+        with redirect_stdout(f):
+            ret = main(["analyze", "# System\nYou are a bot.\n\n# User\nHello", "--json"])
+        self.assertEqual(ret, 0)
+        self.assertIn('"components"', f.getvalue())
+        self.assertIn('"cacheability"', f.getvalue())
+
+    def test_cli_regression(self):
+        f = io.StringIO()
+        with redirect_stdout(f):
+            ret = main(["regression", "base prompt", "candidate prompt with more text", "--json"])
+        self.assertIn('"delta_tokens"', f.getvalue())
+
+    def test_cli_history(self):
+        f = io.StringIO()
+        with redirect_stdout(f):
+            ret = main(["history", "--turns", "5", "--tokens-per-turn", "100", "--json"])
+        self.assertEqual(ret, 0)
+        self.assertIn('"cumulative_overhead_multiplier"', f.getvalue())
+
 
 if __name__ == "__main__":
     unittest.main()

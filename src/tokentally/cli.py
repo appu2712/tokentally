@@ -9,7 +9,7 @@ import sys
 from typing import List, Optional
 
 from . import __version__
-from .counter import count_tokens
+from .counter import count_tokens, count_tokens_detailed
 from .calculator import estimate_cost, compare_models
 from .packer import pack_repository
 from .guard import check_budget
@@ -19,6 +19,10 @@ from .reporter import generate_report
 from .mcp import MCPServer
 from .server import start_server
 from .hooks import scaffold_github_workflow, install_git_precommit_hook
+from .analyzer import analyze_prompt_context
+from .regression import compare_prompt_regression
+from .tools import analyze_tool_schemas, simulate_history_growth
+from .config import load_config
 from .models import MODEL_REGISTRY, list_supported_models
 
 # Ensure stdout encoding is safe across all platforms
@@ -75,12 +79,20 @@ def handle_count(args: argparse.Namespace) -> int:
         sys.stderr.write(f"{RED}Error:{RESET} No input text, file, or piped content provided.\n")
         return 1
 
-    tokens = count_tokens(content, model=args.model)
+    res = count_tokens_detailed(content, model=args.model)
 
     if args.json:
-        print(json.dumps({"target": args.target or "stdin", "model": args.model, "tokens": tokens}, indent=2))
+        print(json.dumps({
+            "target": args.target or "stdin",
+            "model": args.model,
+            "tokens": res.tokens,
+            "method": res.method,
+            "encoding": res.encoding,
+            "is_exact": res.is_exact,
+        }, indent=2))
     else:
-        print(f"{BOLD}Tokens:{RESET} {CYAN}{tokens:,}{RESET} {DIM}(model: {args.model}){RESET}")
+        method_badge = f"{GREEN}[exact BPE: {res.encoding}]{RESET}" if res.is_exact else f"{YELLOW}[calibrated heuristic]{RESET}"
+        print(f"{BOLD}Tokens:{RESET} {CYAN}{res.tokens:,}{RESET} {DIM}(model: {args.model}){RESET} {method_badge}")
     return 0
 
 
@@ -150,6 +162,233 @@ def handle_compare(args: argparse.Namespace) -> int:
     return 0
 
 
+def handle_analyze(args: argparse.Namespace) -> int:
+    content = _read_input_target(args.target)
+    if not content:
+        sys.stderr.write(f"{RED}Error:{RESET} No input text provided.\n")
+        return 1
+
+    res = analyze_prompt_context(content, model=args.model)
+
+    if args.json:
+        print(json.dumps(res.to_dict(), indent=2))
+        return 0
+
+    tokenizer_badge = f"{GREEN}[exact BPE]{RESET}" if res.is_exact_tokenizer else f"{YELLOW}[calibrated heuristic]{RESET}"
+    print(f"\n{BOLD}{CYAN}=== TokenTally Context & Bloat Audit ==={RESET}")
+    print(f"  {BOLD}Total Tokens:{RESET}       {CYAN}{res.total_tokens:,}{RESET} {tokenizer_badge}")
+    print(f"  {BOLD}Model Evaluated:{RESET}    {res.model} (${res.total_cost_usd:.6f}/call)")
+
+    print(f"\n{BOLD}Context Components Attribution:{RESET}")
+    header = f"  {'LAYER':<28} {'TOKENS':<10} {'PERCENT':<10} {'EST. COST':<12} {'CACHEABLE'}"
+    print(f"{BOLD}{header}{RESET}")
+    print("  " + "-" * 72)
+    for c in res.components:
+        cache_str = f"{GREEN}Yes{RESET}" if c.is_cacheable else f"{DIM}No{RESET}"
+        print(f"  {c.name:<28} {c.tokens:<10,d} {c.pct_of_total:<10.1f}% ${c.cost_usd:<11.6f} {cache_str}")
+
+    print(f"\n{BOLD}Prompt Caching Analysis:{RESET}")
+    print(f"  {BOLD}Static Prefix Tokens:{RESET} {res.cacheability.static_prefix_tokens:,}")
+    print(f"  {BOLD}Dynamic Tokens:{RESET}      {res.cacheability.dynamic_tokens:,}")
+    print(f"  {BOLD}Cache Status:{RESET}        {GREEN}Eligible{RESET}" if res.cacheability.cache_eligible else f"  {BOLD}Cache Status:{RESET}        {YELLOW}Not Eligible / Broken{RESET}")
+    print(f"  {BOLD}Recommendation:{RESET}      {res.cacheability.recommendation}")
+
+    if res.reasoning_estimate.is_reasoning_model:
+        print(f"\n{BOLD}Reasoning Token Projections (o1 / o3-mini / R1):{RESET}")
+        print(f"  {BOLD}Estimated Hidden Tokens:{RESET} {res.reasoning_estimate.estimated_reasoning_tokens_low:,} - {res.reasoning_estimate.estimated_reasoning_tokens_high:,}")
+        print(f"  {BOLD}Estimated Total Spend:{RESET}   ${res.reasoning_estimate.estimated_cost_low_usd:.4f} - ${res.reasoning_estimate.estimated_cost_high_usd:.4f}")
+        print(f"  {DIM}{res.reasoning_estimate.explanation}{RESET}")
+
+    if res.bloat_warnings:
+        print(f"\n{BOLD}{YELLOW}Bloat Warnings & Diagnostics:{RESET}")
+        for w in res.bloat_warnings:
+            print(f"  {YELLOW}• {w}{RESET}")
+
+    if res.recommendations:
+        print(f"\n{BOLD}{GREEN}Optimization Recommendations:{RESET}")
+        for r in res.recommendations:
+            print(f"  {GREEN}✓ {r}{RESET}")
+    print()
+    return 0
+
+
+def handle_diff(args: argparse.Namespace) -> int:
+    stdin_content = None
+    if args.ref == "-":
+        stdin_content = sys.stdin.read()
+        args.ref = None
+
+    try:
+        diff_res = profile_git_diff(
+            ref=args.ref,
+            staged=args.staged,
+            model=args.model,
+            raw_patch=stdin_content,
+            exclude_generated=args.exclude_generated,
+        )
+    except Exception as e:
+        sys.stderr.write(f"{RED}Error:{RESET} {e}\n")
+        return 1
+
+    if args.json:
+        print(json.dumps(diff_res.to_dict(), indent=2))
+        return 0
+
+    print(f"\n{BOLD}{CYAN}=== Git Diff AI Review Cost Profiler ==={RESET}")
+    print(f"  {BOLD}Target Ref:{RESET}           {diff_res.target_ref}")
+    print(f"  {BOLD}Files Modified:{RESET}       {diff_res.files_changed}")
+    print(f"  {BOLD}Effective Review Tokens:{RESET} {CYAN}{diff_res.total_tokens:,}{RESET} {DIM}(model: {diff_res.model}){RESET}")
+    print(f"  {BOLD}Human Logic Tokens:{RESET}   {diff_res.human_code_tokens:,}")
+    print(f"  {BOLD}Generated/Lock Tokens:{RESET}{YELLOW}{diff_res.generated_tokens:,}{RESET}")
+    print(f"  {BOLD}Review Value Density:{RESET} {BOLD}{GREEN}{diff_res.review_value_density * 100:.1f}%{RESET}")
+    print(f"  {BOLD}Estimated Review Cost:{RESET}{GREEN}${diff_res.estimated_review_cost_usd:.6f}{RESET}\n")
+
+    if diff_res.file_breakdown:
+        print(f"{BOLD}{'FILE':<38} {'TOKENS':<10} {'CATEGORY':<14} {'CHANGES'}{RESET}")
+        print("-" * 72)
+        for f in diff_res.file_breakdown:
+            cat_color = YELLOW if f.is_generated else CYAN
+            print(f"{f.path:<38} {f.tokens:<10,d} {cat_color}{f.category:<14}{RESET} {GREEN}+{f.added_lines}{RESET}/{RED}-{f.deleted_lines}{RESET}")
+
+    if diff_res.recommendations:
+        print()
+        for r in diff_res.recommendations:
+            print(f"  {YELLOW}• {r}{RESET}")
+    print()
+    return 0
+
+
+def handle_regression(args: argparse.Namespace) -> int:
+    try:
+        reg_res = compare_prompt_regression(
+            baseline=args.baseline,
+            candidate=args.candidate,
+            model=args.model,
+            max_regression_pct=args.max_regression_pct,
+        )
+    except Exception as e:
+        sys.stderr.write(f"{RED}Error:{RESET} {e}\n")
+        return 1
+
+    if args.json:
+        print(json.dumps(reg_res.to_dict(), indent=2))
+        return 1 if reg_res.is_violation else 0
+
+    print(f"\n{BOLD}{CYAN}=== Prompt Token Regression Audit ==={RESET}")
+    print(f"  {BOLD}Baseline Tokens:{RESET}    {reg_res.baseline_tokens:,} (${reg_res.baseline_cost_usd:.6f})")
+    print(f"  {BOLD}Candidate Tokens:{RESET}   {reg_res.candidate_tokens:,} (${reg_res.candidate_cost_usd:.6f})")
+
+    delta_color = RED if reg_res.delta_tokens > 0 else GREEN
+    sign = "+" if reg_res.delta_tokens > 0 else ""
+    print(f"  {BOLD}Token Delta:{RESET}        {delta_color}{sign}{reg_res.delta_tokens:,} tokens ({sign}{reg_res.percent_change}%){RESET}")
+    print(f"  {BOLD}Monthly Cost Impact:{RESET}{delta_color}{sign}${reg_res.projected_monthly_impact_10k_usd:,.2f} / 10k calls{RESET}")
+
+    if reg_res.is_violation:
+        print(f"\n{BOLD}{RED}{CROSSMARK} {reg_res.message}{RESET}\n")
+        return 1
+    else:
+        print(f"\n{BOLD}{GREEN}{CHECKMARK} {reg_res.message}{RESET}\n")
+        return 0
+
+
+def handle_tools(args: argparse.Namespace) -> int:
+    content = _read_input_target(args.target)
+    if not content:
+        sys.stderr.write(f"{RED}Error:{RESET} No tool JSON file or content provided.\n")
+        return 1
+
+    try:
+        report = analyze_tool_schemas(content, model=args.model)
+    except Exception as e:
+        sys.stderr.write(f"{RED}Error:{RESET} {e}\n")
+        return 1
+
+    if args.json:
+        print(json.dumps(report.to_dict(), indent=2))
+        return 0
+
+    print(f"\n{BOLD}{CYAN}=== Tool Schema Context & Bloat Audit ==={RESET}")
+    print(f"  {BOLD}Total Tools Exposed:{RESET}  {report.total_tools}")
+    print(f"  {BOLD}Total Schema Tokens:{RESET}  {CYAN}{report.total_tokens:,}{RESET}")
+    print(f"  {BOLD}Fixed Overhead/Call:{RESET}  ${report.cost_per_request_usd:.6f}\n")
+
+    print(f"{BOLD}{'TOOL NAME':<30} {'TOKENS':<10} {'FIELDS':<8} {'DEPTH':<8} {'DESC %'}{RESET}")
+    print("-" * 65)
+    for t in report.tools:
+        print(f"{t.name:<30} {t.tokens:<10,d} {t.field_count:<8} {t.max_depth:<8} {t.description_pct:>5.1f}%")
+
+    if report.recommendations:
+        print(f"\n{BOLD}{YELLOW}Tool Bloat Warnings:{RESET}")
+        for r in report.recommendations:
+            print(f"  {YELLOW}• {r}{RESET}")
+    print()
+    return 0
+
+
+def handle_history(args: argparse.Namespace) -> int:
+    res = simulate_history_growth(
+        num_turns=args.turns,
+        tokens_per_turn=args.tokens_per_turn,
+        model=args.model,
+    )
+
+    if args.json:
+        print(json.dumps(res.to_dict(), indent=2))
+        return 0
+
+    print(f"\n{BOLD}{CYAN}=== Multi-Turn History O(n^2) Cumulative Growth Simulation ==={RESET}")
+    print(f"  {BOLD}Dialogue Turns:{RESET}            {res.num_turns}")
+    print(f"  {BOLD}Tokens added/turn:{RESET}         {res.avg_tokens_per_turn:,}")
+    print(f"  {BOLD}Final Single-Turn Context:{RESET} {res.final_turn_context_tokens:,} tokens (${res.single_turn_cost_usd:.6f})")
+    print(f"  {BOLD}Cumulative Processed:{RESET}     {BOLD}{RED}{res.cumulative_processed_tokens:,} tokens{RESET} (${res.cumulative_total_cost_usd:.6f})")
+    print(f"  {BOLD}Reprocessing Multiplier:{RESET}  {YELLOW}{res.cumulative_overhead_multiplier}x overhead{RESET}\n")
+    print(f"  {GREEN}Recommendation:{RESET} {res.recommendation}\n")
+    return 0
+
+
+def handle_optimize(args: argparse.Namespace) -> int:
+    content = _read_input_target(args.target)
+    if not content:
+        sys.stderr.write(f"{RED}Error:{RESET} No input text provided.\n")
+        return 1
+
+    opt_res = optimize_prompt(
+        text=content,
+        model=args.model,
+        strip_comments=args.strip_comments,
+    )
+
+    if args.json:
+        print(json.dumps(opt_res.to_dict(), indent=2))
+        return 0
+
+    if args.output:
+        with open(args.output, "w", encoding="utf-8") as f:
+            f.write(opt_res.optimized_text)
+
+    invariance_badge = f"{GREEN}[Invariance: 100% Passed]{RESET}" if opt_res.invariance_passed else f"{RED}[Constraint Warning]{RESET}"
+    print(f"\n{BOLD}{GREEN}{CHECKMARK} Prompt Optimization Complete!{RESET} {invariance_badge}")
+    print(f"  {BOLD}Original Tokens:{RESET}   {opt_res.original_tokens:,} (${opt_res.original_cost_usd:.6f})")
+    print(f"  {BOLD}Optimized Tokens:{RESET}  {CYAN}{opt_res.optimized_tokens:,}{RESET} (${opt_res.optimized_cost_usd:.6f})")
+    print(f"  {BOLD}Tokens Saved:{RESET}      {BOLD}{GREEN}{opt_res.saved_tokens:,} ({opt_res.percent_reduction}% reduction){RESET}")
+    print(f"  {BOLD}Per 10k Invocations:{RESET} Saves ${opt_res.saved_cost_usd * 10000:,.2f}")
+
+    if opt_res.transformation_steps:
+        print(f"\n{BOLD}Applied Transformations & Rationale:{RESET}")
+        for s in opt_res.transformation_steps:
+            print(f"  {GREEN}• {s.name:<25}{RESET} Saved {s.tokens_saved} tokens ({DIM}{s.rationale}{RESET})")
+
+    if opt_res.invariance_warnings:
+        print(f"\n{BOLD}{RED}Constraint Warnings:{RESET}")
+        for w in opt_res.invariance_warnings:
+            print(f"  {RED}! {w}{RESET}")
+
+    if args.output:
+        print(f"\n  {BOLD}Saved To:{RESET} {CYAN}{args.output}{RESET}")
+    print()
+    return 0
+
+
 def handle_pack(args: argparse.Namespace) -> int:
     try:
         pack_res = pack_repository(
@@ -187,6 +426,7 @@ def handle_check(args: argparse.Namespace) -> int:
         model=args.model,
         max_cost_usd=args.max_cost,
         max_tokens=args.max_tokens,
+        warning_cost_usd=args.warning_cost,
         completion_tokens=args.completion_tokens,
     )
 
@@ -198,7 +438,11 @@ def handle_check(args: argparse.Namespace) -> int:
         print(f"\n{BOLD}{GREEN}{CHECKMARK} Budget check passed!{RESET}")
         print(f"  {BOLD}Target:{RESET}      {res.target}")
         print(f"  {BOLD}Tokens:{RESET}      {res.tokens:,} (model: {res.model})")
-        print(f"  {BOLD}Est. Cost:{RESET}   ${res.cost_usd:.6f}\n")
+        print(f"  {BOLD}Est. Cost:{RESET}   ${res.cost_usd:.6f}")
+        if res.has_warnings:
+            for w in res.warnings:
+                print(f"  {YELLOW}⚠ {w}{RESET}")
+        print()
         return 0
     else:
         print(f"\n{BOLD}{RED}{CROSSMARK} Budget check FAILED!{RESET}")
@@ -206,73 +450,6 @@ def handle_check(args: argparse.Namespace) -> int:
             print(f"  {RED}• {v}{RESET}")
         print(f"  {BOLD}Current usage:{RESET} {res.tokens:,} tokens (~${res.cost_usd:.6f})\n")
         return 1
-
-
-def handle_diff(args: argparse.Namespace) -> int:
-    stdin_content = None
-    if args.ref == "-":
-        stdin_content = sys.stdin.read()
-        args.ref = None
-
-    try:
-        diff_res = profile_git_diff(
-            ref=args.ref,
-            staged=args.staged,
-            model=args.model,
-            raw_patch=stdin_content,
-        )
-    except Exception as e:
-        sys.stderr.write(f"{RED}Error:{RESET} {e}\n")
-        return 1
-
-    if args.json:
-        print(json.dumps(diff_res.to_dict(), indent=2))
-        return 0
-
-    print(f"\n{BOLD}{CYAN}=== Git Diff AI Review Cost Profiler ==={RESET}")
-    print(f"  {BOLD}Target Ref:{RESET}         {diff_res.target_ref}")
-    print(f"  {BOLD}Files Modified:{RESET}     {diff_res.files_changed}")
-    print(f"  {BOLD}Diff Patch Tokens:{RESET}  {CYAN}{diff_res.total_tokens:,}{RESET} {DIM}(model: {diff_res.model}){RESET}")
-    print(f"  {BOLD}Est. Review Cost:{RESET}   {GREEN}${diff_res.estimated_review_cost_usd:.6f}{RESET}\n")
-
-    if diff_res.file_breakdown:
-        print(f"{BOLD}{'FILE':<40} {'TOKENS':<10} {'CHANGES'}{RESET}")
-        print("-" * 65)
-        for f in diff_res.file_breakdown:
-            print(f"{f.path:<40} {f.tokens:<10,d} {GREEN}+{f.added_lines}{RESET}/{RED}-{f.deleted_lines}{RESET}")
-    print()
-    return 0
-
-
-def handle_optimize(args: argparse.Namespace) -> int:
-    content = _read_input_target(args.target)
-    if not content:
-        sys.stderr.write(f"{RED}Error:{RESET} No input text provided.\n")
-        return 1
-
-    opt_res = optimize_prompt(
-        text=content,
-        model=args.model,
-        strip_comments=args.strip_comments,
-    )
-
-    if args.json:
-        print(json.dumps(opt_res.to_dict(), indent=2))
-        return 0
-
-    if args.output:
-        with open(args.output, "w", encoding="utf-8") as f:
-            f.write(opt_res.optimized_text)
-
-    print(f"\n{BOLD}{GREEN}{CHECKMARK} Prompt Optimization Complete!{RESET}")
-    print(f"  {BOLD}Original Tokens:{RESET}   {opt_res.original_tokens:,} (${opt_res.original_cost_usd:.6f})")
-    print(f"  {BOLD}Optimized Tokens:{RESET}  {CYAN}{opt_res.optimized_tokens:,}{RESET} (${opt_res.optimized_cost_usd:.6f})")
-    print(f"  {BOLD}Tokens Saved:{RESET}      {BOLD}{GREEN}{opt_res.saved_tokens:,} ({opt_res.percent_reduction}% reduction){RESET}")
-    print(f"  {BOLD}Per 10k Invocations:{RESET} Saves ${opt_res.saved_cost_usd * 10000:,.2f}")
-    if args.output:
-        print(f"  {BOLD}Saved To:{RESET}          {args.output}")
-    print()
-    return 0
 
 
 def handle_report(args: argparse.Namespace) -> int:
@@ -351,7 +528,7 @@ def handle_models(args: argparse.Namespace) -> int:
 def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(
         prog="tokentally",
-        description="Fast Token Counter, Multi-Model Cost Estimator, Context Packer, Prompt Optimizer & MCP Server",
+        description="Fast Token Counter, Multi-Model Cost Estimator, Context Analyzer, Prompt Optimizer & MCP Server",
     )
     parser.add_argument(
         "-v", "--version", action="version", version=f"%(prog)s {__version__}"
@@ -360,7 +537,7 @@ def build_parser() -> argparse.ArgumentParser:
     subparsers = parser.add_subparsers(dest="command", help="Available subcommands")
 
     # count
-    p_count = subparsers.add_parser("count", help="Count tokens in text, file, or stdin")
+    p_count = subparsers.add_parser("count", help="Count tokens in text, file, or stdin with tokenizer transparency")
     p_count.add_argument("target", nargs="?", default=None, help="Text string, file path, or - for stdin")
     p_count.add_argument("-m", "--model", default="gpt-4o", help="Target model for tokenizer (default: gpt-4o)")
     p_count.add_argument("--json", action="store_true", help="Output in JSON format")
@@ -380,6 +557,41 @@ def build_parser() -> argparse.ArgumentParser:
     p_comp.add_argument("--completion-ratio", type=float, default=0.5, help="Completion ratio relative to input")
     p_comp.add_argument("--json", action="store_true", help="Output in JSON format")
 
+    # analyze
+    p_ana = subparsers.add_parser("analyze", help="Decompose prompt layers (system, history, tools, RAG) & inspect caching")
+    p_ana.add_argument("target", nargs="?", default=None, help="Prompt text, file, or JSON chat transcript")
+    p_ana.add_argument("-m", "--model", default="gpt-4o", help="Model to evaluate")
+    p_ana.add_argument("--json", action="store_true", help="Output in JSON format")
+
+    # regression
+    p_reg = subparsers.add_parser("regression", help="Audit token inflation between baseline and candidate prompts")
+    p_reg.add_argument("baseline", help="Baseline prompt file or text")
+    p_reg.add_argument("candidate", help="Candidate prompt file or text")
+    p_reg.add_argument("-m", "--model", default="gpt-4o", help="Model to evaluate")
+    p_reg.add_argument("--max-regression-pct", type=float, default=15.0, help="Maximum allowed token growth percentage")
+    p_reg.add_argument("--json", action="store_true", help="Output in JSON format")
+
+    # diff
+    p_diff = subparsers.add_parser("diff", help="Profile token size and review cost of git changes")
+    p_diff.add_argument("ref", nargs="?", default=None, help="Git branch or commit ref to diff against")
+    p_diff.add_argument("--staged", action="store_true", help="Profile only git staged changes")
+    p_diff.add_argument("--exclude-generated", action="store_true", default=False, help="Exclude lockfiles and compiled code from review")
+    p_diff.add_argument("-m", "--model", default="gpt-4o", help="Model to evaluate")
+    p_diff.add_argument("--json", action="store_true", help="Output in JSON format")
+
+    # tools
+    p_tls = subparsers.add_parser("tools", help="Audit tool schemas for excessive descriptions and field bloat")
+    p_tls.add_argument("target", help="JSON file or string containing tool definitions")
+    p_tls.add_argument("-m", "--model", default="gpt-4o", help="Model to evaluate")
+    p_tls.add_argument("--json", action="store_true", help="Output in JSON format")
+
+    # history
+    p_his = subparsers.add_parser("history", help="Simulate multi-turn cumulative conversation history overhead O(n^2)")
+    p_his.add_argument("--turns", type=int, default=10, help="Number of dialogue turns")
+    p_his.add_argument("--tokens-per-turn", type=int, default=500, help="Average new tokens added per turn")
+    p_his.add_argument("-m", "--model", default="gpt-4o", help="Model to evaluate")
+    p_his.add_argument("--json", action="store_true", help="Output in JSON format")
+
     # pack
     p_pack = subparsers.add_parser("pack", help="Pack directory/codebase into LLM prompt context")
     p_pack.add_argument("directory", nargs="?", default=".", help="Root directory to pack (default: current dir)")
@@ -392,24 +604,18 @@ def build_parser() -> argparse.ArgumentParser:
     # check
     p_check = subparsers.add_parser("check", help="CI/CD gate to verify token and cost budget limits")
     p_check.add_argument("target", help="File path, directory, or string prompt to evaluate")
-    p_check.add_argument("-m", "--model", default="gpt-4o", help="Model to evaluate")
-    p_check.add_argument("--max-cost", type=float, help="Maximum allowed cost in USD (e.g. 0.50)")
-    p_check.add_argument("--max-tokens", type=int, help="Maximum allowed tokens (e.g. 50000)")
+    p_check.add_argument("-m", "--model", default=None, help="Model to evaluate (defaults to tokentally.toml)")
+    p_check.add_argument("--max-cost", type=float, default=None, help="Maximum allowed cost in USD (e.g. 0.50)")
+    p_check.add_argument("--warning-cost", type=float, default=None, help="Soft warning cost threshold")
+    p_check.add_argument("--max-tokens", type=int, default=None, help="Maximum allowed tokens (e.g. 50000)")
     p_check.add_argument("--completion-tokens", type=int, default=0, help="Expected completion tokens")
     p_check.add_argument("--json", action="store_true", help="Output in JSON format")
 
-    # diff
-    p_diff = subparsers.add_parser("diff", help="Profile token size and review cost of git changes")
-    p_diff.add_argument("ref", nargs="?", default=None, help="Git branch or commit ref to diff against")
-    p_diff.add_argument("--staged", action="store_true", help="Profile only git staged changes")
-    p_diff.add_argument("-m", "--model", default="gpt-4o", help="Model to evaluate")
-    p_diff.add_argument("--json", action="store_true", help="Output in JSON format")
-
     # optimize
-    p_opt = subparsers.add_parser("optimize", help="Minify and compress prompt to reduce token consumption")
+    p_opt = subparsers.add_parser("optimize", help="Minify prompt with constraint invariance preservation")
     p_opt.add_argument("target", nargs="?", default=None, help="Prompt text or file path")
     p_opt.add_argument("-o", "--output", help="Destination file for optimized prompt")
-    p_opt.add_argument("--strip-comments", action="store_true", help="Strip code comments")
+    p_opt.add_argument("--strip-comments", action="store_true", help="Strip non-critical code comments")
     p_opt.add_argument("-m", "--model", default="gpt-4o", help="Model used for token calculation")
     p_opt.add_argument("--json", action="store_true", help="Output in JSON format")
 
@@ -454,9 +660,13 @@ def main(args: Optional[List[str]] = None) -> int:
         "count": handle_count,
         "cost": handle_cost,
         "compare": handle_compare,
+        "analyze": handle_analyze,
+        "regression": handle_regression,
+        "diff": handle_diff,
+        "tools": handle_tools,
+        "history": handle_history,
         "pack": handle_pack,
         "check": handle_check,
-        "diff": handle_diff,
         "optimize": handle_optimize,
         "report": handle_report,
         "ui": handle_ui,

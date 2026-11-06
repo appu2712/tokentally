@@ -1,11 +1,11 @@
 """
-tokentally - Fast Token Counter, LLM Cost Estimator & Context Packer
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+tokentally - Fast Token Counter, LLM Cost Estimator & Context Optimization Engine
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-A unified developer library and CLI to count tokens, estimate exact multi-model costs,
-pack repositories for LLM prompts, enforce CI/CD budget guardrails, optimize prompts,
-profile git diffs, and host local studio dashboards across OpenAI, Claude, Gemini,
-DeepSeek, Mistral, and local open-source models.
+The unified AI Resource Optimization Layer:
+Token counting, multi-model cost modeling, context layer decomposition,
+git review value density profiling, prompt optimization with constraint invariance,
+regression gates, tool schema auditing, and native MCP intelligence.
 """
 
 from .models import (
@@ -16,7 +16,9 @@ from .models import (
 )
 from .counter import (
     TokenCounter,
+    TokenCountResult,
     count_tokens,
+    count_tokens_detailed,
     get_model_encoding,
 )
 from .calculator import (
@@ -39,11 +41,14 @@ from .guard import (
 from .optimizer import (
     PromptOptimizer,
     OptimizationResult,
+    TransformationStep,
     optimize_prompt,
 )
 from .git import (
     GitDiffProfiler,
     GitDiffResult,
+    FileDiffStat,
+    classify_diff_file,
     profile_git_diff,
 )
 from .tracker import (
@@ -54,6 +59,35 @@ from .tracker import (
 from .reporter import (
     AuditReporter,
     generate_report,
+)
+from .analyzer import (
+    PromptContextAnalyzer,
+    PromptAnalysisResult,
+    ContextComponent,
+    CacheabilityReport,
+    ReasoningTokenAnalysis,
+    analyze_prompt_context,
+)
+from .regression import (
+    RegressionComparator,
+    RegressionResult,
+    compare_prompt_regression,
+)
+from .tools import (
+    ToolWorkloadEngine,
+    ToolCatalogReport,
+    ToolSchemaStat,
+    HistorySimulationResult,
+    AgentLoopReport,
+    analyze_tool_schemas,
+    simulate_history_growth,
+)
+from .config import (
+    TokentallyConfig,
+    BudgetConfig,
+    RegressionConfig,
+    ReviewConfig,
+    load_config,
 )
 from .mcp import (
     MCPServer,
@@ -70,7 +104,9 @@ __all__ = [
     "get_model_pricing",
     "list_supported_models",
     "TokenCounter",
+    "TokenCountResult",
     "count_tokens",
+    "count_tokens_detailed",
     "get_model_encoding",
     "CostCalculator",
     "CostResult",
@@ -85,15 +121,39 @@ __all__ = [
     "check_budget",
     "PromptOptimizer",
     "OptimizationResult",
+    "TransformationStep",
     "optimize_prompt",
     "GitDiffProfiler",
     "GitDiffResult",
+    "FileDiffStat",
+    "classify_diff_file",
     "profile_git_diff",
     "BudgetTracker",
     "BudgetExceededError",
     "track",
     "AuditReporter",
     "generate_report",
+    "PromptContextAnalyzer",
+    "PromptAnalysisResult",
+    "ContextComponent",
+    "CacheabilityReport",
+    "ReasoningTokenAnalysis",
+    "analyze_prompt_context",
+    "RegressionComparator",
+    "RegressionResult",
+    "compare_prompt_regression",
+    "ToolWorkloadEngine",
+    "ToolCatalogReport",
+    "ToolSchemaStat",
+    "HistorySimulationResult",
+    "AgentLoopReport",
+    "analyze_tool_schemas",
+    "simulate_history_growth",
+    "TokentallyConfig",
+    "BudgetConfig",
+    "RegressionConfig",
+    "ReviewConfig",
+    "load_config",
     "MCPServer",
     "scaffold_github_workflow",
     "install_git_precommit_hook",

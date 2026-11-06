@@ -1,18 +1,22 @@
 """
 Native Model Context Protocol (MCP) server implementation for TokenTally.
 Allows any MCP-compliant AI assistant (Cursor, Claude Desktop, Antigravity)
-to query token counts, model pricing, and context packaging tools.
+to query token counts, model pricing, prompt context decomposition, git review value,
+and tool schema footprints.
 """
 
 import json
 import sys
-from typing import Any, Dict, List
+from typing import Any, Dict, List, Optional
 
-from .counter import count_tokens
+from .counter import count_tokens_detailed
 from .calculator import estimate_cost, compare_models
 from .packer import pack_repository
 from .optimizer import optimize_prompt
-from .models import list_supported_models
+from .analyzer import analyze_prompt_context
+from .git import profile_git_diff
+from .regression import compare_prompt_regression
+from .tools import analyze_tool_schemas, simulate_history_growth
 
 
 TOOLS_METADATA = [
@@ -41,6 +45,54 @@ TOOLS_METADATA = [
         }
     },
     {
+        "name": "tokentally_analyze_context",
+        "description": "Decompose prompt into layers (system instructions, user request, history, tools, RAG) and audit prompt caching potential.",
+        "inputSchema": {
+            "type": "object",
+            "properties": {
+                "prompt": {"type": "string", "description": "Raw prompt text or chat messages JSON"},
+                "model": {"type": "string", "default": "gpt-4o"}
+            },
+            "required": ["prompt"]
+        }
+    },
+    {
+        "name": "tokentally_profile_git_diff",
+        "description": "Calculate token size and review cost of git changes, classifying lockfiles and generated code to measure Review Value Density.",
+        "inputSchema": {
+            "type": "object",
+            "properties": {
+                "ref": {"type": "string", "description": "Git branch or commit ref to diff against"},
+                "staged": {"type": "boolean", "default": False},
+                "exclude_generated": {"type": "boolean", "default": True, "description": "Exclude lockfiles and compiled assets"}
+            }
+        }
+    },
+    {
+        "name": "tokentally_inspect_tools",
+        "description": "Measure token footprint and field complexity of OpenAI / JSON-Schema tool definitions.",
+        "inputSchema": {
+            "type": "object",
+            "properties": {
+                "tools_json": {"type": "string", "description": "JSON string of tool definitions array"}
+            },
+            "required": ["tools_json"]
+        }
+    },
+    {
+        "name": "tokentally_check_regression",
+        "description": "Compare candidate prompt against baseline to detect token growth and monthly billing impact.",
+        "inputSchema": {
+            "type": "object",
+            "properties": {
+                "baseline": {"type": "string", "description": "Baseline prompt text or path"},
+                "candidate": {"type": "string", "description": "Candidate prompt text or path"},
+                "max_regression_pct": {"type": "number", "default": 15.0}
+            },
+            "required": ["baseline", "candidate"]
+        }
+    },
+    {
         "name": "tokentally_pack_workspace",
         "description": "Scan a directory and package its source files into an LLM-ready prompt with token breakdown.",
         "inputSchema": {
@@ -55,7 +107,7 @@ TOOLS_METADATA = [
     },
     {
         "name": "tokentally_optimize_prompt",
-        "description": "Minify a prompt by collapsing whitespace and comments to save tokens and reduce API bills.",
+        "description": "Minify a prompt by collapsing redundant whitespace and comments while preserving critical instructions and constraints.",
         "inputSchema": {
             "type": "object",
             "properties": {
@@ -162,6 +214,31 @@ class MCPServer:
             prompt = args["prompt"]
             rows = compare_models(prompt)
             return [r.to_dict() for r in rows]
+
+        elif name == "tokentally_analyze_context":
+            prompt = args["prompt"]
+            model = args.get("model", "gpt-4o")
+            res = analyze_prompt_context(prompt, model=model)
+            return res.to_dict()
+
+        elif name == "tokentally_profile_git_diff":
+            ref = args.get("ref")
+            staged = args.get("staged", False)
+            exclude_gen = args.get("exclude_generated", True)
+            res = profile_git_diff(ref=ref, staged=staged, exclude_generated=exclude_gen)
+            return res.to_dict()
+
+        elif name == "tokentally_inspect_tools":
+            tools_json = args["tools_json"]
+            res = analyze_tool_schemas(tools_json)
+            return res.to_dict()
+
+        elif name == "tokentally_check_regression":
+            base = args["baseline"]
+            cand = args["candidate"]
+            max_pct = args.get("max_regression_pct", 15.0)
+            res = compare_prompt_regression(base, cand, max_regression_pct=max_pct)
+            return res.to_dict()
 
         elif name == "tokentally_pack_workspace":
             directory = args["directory"]
