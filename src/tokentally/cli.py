@@ -13,8 +13,13 @@ from .counter import count_tokens
 from .calculator import estimate_cost, compare_models
 from .packer import pack_repository
 from .guard import check_budget
+from .optimizer import optimize_prompt
+from .git import profile_git_diff
+from .reporter import generate_report
+from .mcp import MCPServer
+from .server import start_server
+from .hooks import scaffold_github_workflow, install_git_precommit_hook
 from .models import MODEL_REGISTRY, list_supported_models
-
 
 # Ensure stdout encoding is safe across all platforms
 if hasattr(sys.stdout, "reconfigure"):
@@ -57,10 +62,6 @@ def _read_input_target(target: Optional[str]) -> str:
             with open(target, "r", encoding="utf-8", errors="replace") as f:
                 return f.read()
         return target
-
-    # Read from standard input if piped
-    if not sys.stdin.isatty():
-        return sys.stdin.read()
 
     if target == "-":
         return sys.stdin.read()
@@ -134,7 +135,7 @@ def handle_compare(args: argparse.Namespace) -> int:
         return 0
 
     print(f"\n{BOLD}{CYAN}=== Multi-Model Cost Comparison ==={RESET}")
-    header = f"{'MODEL':<22} {'PROVIDER':<12} {'IN TOK':<9} {'OUT TOK':<9} {'TOTAL COST':<14} {'RATIO'}"
+    header = f"{'MODEL':<22} {'PROVIDER':<14} {'IN TOK':<9} {'OUT TOK':<9} {'TOTAL COST':<14} {'RATIO'}"
     print(f"{BOLD}{header}{RESET}")
     print("-" * len(header))
 
@@ -142,7 +143,7 @@ def handle_compare(args: argparse.Namespace) -> int:
         ratio_str = f"{r.relative_ratio:.2f}x"
         color = GREEN if r.relative_ratio <= 1.0 else YELLOW if r.relative_ratio < 5.0 else RED
         print(
-            f"{r.model:<22} {r.provider:<12} {r.input_tokens:<9,d} {r.output_tokens:<9,d} "
+            f"{r.model:<22} {r.provider:<14} {r.input_tokens:<9,d} {r.output_tokens:<9,d} "
             f"{color}${r.total_cost_usd:<13.6f}{RESET} {DIM}{ratio_str}{RESET}"
         )
     print()
@@ -207,6 +208,121 @@ def handle_check(args: argparse.Namespace) -> int:
         return 1
 
 
+def handle_diff(args: argparse.Namespace) -> int:
+    stdin_content = None
+    if args.ref == "-":
+        stdin_content = sys.stdin.read()
+        args.ref = None
+
+    try:
+        diff_res = profile_git_diff(
+            ref=args.ref,
+            staged=args.staged,
+            model=args.model,
+            raw_patch=stdin_content,
+        )
+    except Exception as e:
+        sys.stderr.write(f"{RED}Error:{RESET} {e}\n")
+        return 1
+
+    if args.json:
+        print(json.dumps(diff_res.to_dict(), indent=2))
+        return 0
+
+    print(f"\n{BOLD}{CYAN}=== Git Diff AI Review Cost Profiler ==={RESET}")
+    print(f"  {BOLD}Target Ref:{RESET}         {diff_res.target_ref}")
+    print(f"  {BOLD}Files Modified:{RESET}     {diff_res.files_changed}")
+    print(f"  {BOLD}Diff Patch Tokens:{RESET}  {CYAN}{diff_res.total_tokens:,}{RESET} {DIM}(model: {diff_res.model}){RESET}")
+    print(f"  {BOLD}Est. Review Cost:{RESET}   {GREEN}${diff_res.estimated_review_cost_usd:.6f}{RESET}\n")
+
+    if diff_res.file_breakdown:
+        print(f"{BOLD}{'FILE':<40} {'TOKENS':<10} {'CHANGES'}{RESET}")
+        print("-" * 65)
+        for f in diff_res.file_breakdown:
+            print(f"{f.path:<40} {f.tokens:<10,d} {GREEN}+{f.added_lines}{RESET}/{RED}-{f.deleted_lines}{RESET}")
+    print()
+    return 0
+
+
+def handle_optimize(args: argparse.Namespace) -> int:
+    content = _read_input_target(args.target)
+    if not content:
+        sys.stderr.write(f"{RED}Error:{RESET} No input text provided.\n")
+        return 1
+
+    opt_res = optimize_prompt(
+        text=content,
+        model=args.model,
+        strip_comments=args.strip_comments,
+    )
+
+    if args.json:
+        print(json.dumps(opt_res.to_dict(), indent=2))
+        return 0
+
+    if args.output:
+        with open(args.output, "w", encoding="utf-8") as f:
+            f.write(opt_res.optimized_text)
+
+    print(f"\n{BOLD}{GREEN}{CHECKMARK} Prompt Optimization Complete!{RESET}")
+    print(f"  {BOLD}Original Tokens:{RESET}   {opt_res.original_tokens:,} (${opt_res.original_cost_usd:.6f})")
+    print(f"  {BOLD}Optimized Tokens:{RESET}  {CYAN}{opt_res.optimized_tokens:,}{RESET} (${opt_res.optimized_cost_usd:.6f})")
+    print(f"  {BOLD}Tokens Saved:{RESET}      {BOLD}{GREEN}{opt_res.saved_tokens:,} ({opt_res.percent_reduction}% reduction){RESET}")
+    print(f"  {BOLD}Per 10k Invocations:{RESET} Saves ${opt_res.saved_cost_usd * 10000:,.2f}")
+    if args.output:
+        print(f"  {BOLD}Saved To:{RESET}          {args.output}")
+    print()
+    return 0
+
+
+def handle_report(args: argparse.Namespace) -> int:
+    rep = generate_report(
+        target_path=args.target,
+        output_format=args.format,
+        model=args.model,
+        completion_tokens=args.completion_tokens,
+    )
+
+    if args.output:
+        with open(args.output, "w", encoding="utf-8") as f:
+            f.write(rep)
+        print(f"\n{BOLD}{GREEN}{CHECKMARK} Audit report generated:{RESET} {CYAN}{args.output}{RESET}\n")
+    else:
+        print(rep)
+    return 0
+
+
+def handle_ui(args: argparse.Namespace) -> int:
+    start_server(port=args.port, host=args.host)
+    return 0
+
+
+def handle_mcp(args: argparse.Namespace) -> int:
+    server = MCPServer()
+    server.run_stdio()
+    return 0
+
+
+def handle_init_workflow(args: argparse.Namespace) -> int:
+    try:
+        wf = scaffold_github_workflow()
+        print(f"\n{BOLD}{GREEN}{CHECKMARK} GitHub Actions budget gate created:{RESET} {CYAN}{wf}{RESET}\n")
+        return 0
+    except Exception as e:
+        sys.stderr.write(f"{RED}Error:{RESET} {e}\n")
+        return 1
+
+
+def handle_install_hook(args: argparse.Namespace) -> int:
+    try:
+        hook = install_git_precommit_hook()
+        print(f"\n{BOLD}{GREEN}{CHECKMARK} Pre-commit hook installed:{RESET} {CYAN}{hook}{RESET}\n")
+        return 0
+    except Exception as e:
+        sys.stderr.write(f"{RED}Error:{RESET} {e}\n")
+        return 1
+
+
 def handle_models(args: argparse.Namespace) -> int:
     models = list_supported_models()
 
@@ -216,7 +332,7 @@ def handle_models(args: argparse.Namespace) -> int:
         return 0
 
     print(f"\n{BOLD}{CYAN}=== Supported Models & Pricing (per 1M tokens) ==={RESET}")
-    header = f"{'MODEL':<20} {'PROVIDER':<12} {'INPUT ($)':<11} {'OUTPUT ($)':<12} {'CACHED ($)':<12} {'CONTEXT'}"
+    header = f"{'MODEL':<20} {'PROVIDER':<14} {'INPUT ($)':<11} {'OUTPUT ($)':<12} {'CACHED ($)':<12} {'CONTEXT'}"
     print(f"{BOLD}{header}{RESET}")
     print("-" * len(header))
 
@@ -225,7 +341,7 @@ def handle_models(args: argparse.Namespace) -> int:
         cached_str = f"${p.cached_input_per_m:.4f}" if p.cached_input_per_m is not None else "N/A"
         ctx_k = f"{p.context_window // 1000}k"
         print(
-            f"{p.name:<20} {p.provider:<12} ${p.input_per_m:<10.4f} ${p.output_per_m:<11.4f} "
+            f"{p.name:<20} {p.provider:<14} ${p.input_per_m:<10.4f} ${p.output_per_m:<11.4f} "
             f"{cached_str:<12} {ctx_k}"
         )
     print()
@@ -235,7 +351,7 @@ def handle_models(args: argparse.Namespace) -> int:
 def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(
         prog="tokentally",
-        description="Fast Token Counter, LLM Cost Estimator, Context Packer & Budget Guardrail",
+        description="Fast Token Counter, Multi-Model Cost Estimator, Context Packer, Prompt Optimizer & MCP Server",
     )
     parser.add_argument(
         "-v", "--version", action="version", version=f"%(prog)s {__version__}"
@@ -282,6 +398,43 @@ def build_parser() -> argparse.ArgumentParser:
     p_check.add_argument("--completion-tokens", type=int, default=0, help="Expected completion tokens")
     p_check.add_argument("--json", action="store_true", help="Output in JSON format")
 
+    # diff
+    p_diff = subparsers.add_parser("diff", help="Profile token size and review cost of git changes")
+    p_diff.add_argument("ref", nargs="?", default=None, help="Git branch or commit ref to diff against")
+    p_diff.add_argument("--staged", action="store_true", help="Profile only git staged changes")
+    p_diff.add_argument("-m", "--model", default="gpt-4o", help="Model to evaluate")
+    p_diff.add_argument("--json", action="store_true", help="Output in JSON format")
+
+    # optimize
+    p_opt = subparsers.add_parser("optimize", help="Minify and compress prompt to reduce token consumption")
+    p_opt.add_argument("target", nargs="?", default=None, help="Prompt text or file path")
+    p_opt.add_argument("-o", "--output", help="Destination file for optimized prompt")
+    p_opt.add_argument("--strip-comments", action="store_true", help="Strip code comments")
+    p_opt.add_argument("-m", "--model", default="gpt-4o", help="Model used for token calculation")
+    p_opt.add_argument("--json", action="store_true", help="Output in JSON format")
+
+    # report
+    p_rep = subparsers.add_parser("report", help="Generate executive cost audit report (markdown or csv)")
+    p_rep.add_argument("target", default=".", nargs="?", help="Target file or directory")
+    p_rep.add_argument("--format", choices=["markdown", "csv"], default="markdown", help="Report format")
+    p_rep.add_argument("-o", "--output", help="Save report to file")
+    p_rep.add_argument("-m", "--model", default="gpt-4o", help="Primary model to evaluate")
+    p_rep.add_argument("--completion-tokens", type=int, default=500, help="Expected completion tokens")
+
+    # ui
+    p_ui = subparsers.add_parser("ui", help="Launch interactive local web dashboard")
+    p_ui.add_argument("--port", type=int, default=7860, help="Port to bind (default: 7860)")
+    p_ui.add_argument("--host", default="127.0.0.1", help="Host address (default: 127.0.0.1)")
+
+    # mcp
+    p_mcp = subparsers.add_parser("mcp", help="Start Model Context Protocol (MCP) stdio server")
+
+    # init-workflow
+    subparsers.add_parser("init-workflow", help="Scaffold GitHub Actions LLM budget gate workflow")
+
+    # install-hook
+    subparsers.add_parser("install-hook", help="Install git pre-commit budget guard hook")
+
     # models
     p_models = subparsers.add_parser("models", help="List all supported models and prices")
     p_models.add_argument("--json", action="store_true", help="Output in JSON format")
@@ -303,6 +456,13 @@ def main(args: Optional[List[str]] = None) -> int:
         "compare": handle_compare,
         "pack": handle_pack,
         "check": handle_check,
+        "diff": handle_diff,
+        "optimize": handle_optimize,
+        "report": handle_report,
+        "ui": handle_ui,
+        "mcp": handle_mcp,
+        "init-workflow": handle_init_workflow,
+        "install-hook": handle_install_hook,
         "models": handle_models,
     }
 

@@ -3,8 +3,9 @@ tokentally - Fast Token Counter, LLM Cost Estimator & Context Packer
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 A unified developer library and CLI to count tokens, estimate exact multi-model costs,
-pack repositories for LLM prompts, and enforce CI/CD budget guardrails across
-OpenAI, Claude, Gemini, DeepSeek, and open-source models.
+pack repositories for LLM prompts, enforce CI/CD budget guardrails, optimize prompts,
+profile git diffs, and host local studio dashboards across OpenAI, Claude, Gemini,
+DeepSeek, Mistral, and local open-source models.
 """
 
 from .models import (
@@ -35,6 +36,32 @@ from .guard import (
     GuardResult,
     check_budget,
 )
+from .optimizer import (
+    PromptOptimizer,
+    OptimizationResult,
+    optimize_prompt,
+)
+from .git import (
+    GitDiffProfiler,
+    GitDiffResult,
+    profile_git_diff,
+)
+from .tracker import (
+    BudgetTracker,
+    BudgetExceededError,
+    track,
+)
+from .reporter import (
+    AuditReporter,
+    generate_report,
+)
+from .mcp import (
+    MCPServer,
+)
+from .hooks import (
+    scaffold_github_workflow,
+    install_git_precommit_hook,
+)
 
 __version__ = "0.1.0"
 __all__ = [
@@ -56,4 +83,18 @@ __all__ = [
     "BudgetGuard",
     "GuardResult",
     "check_budget",
+    "PromptOptimizer",
+    "OptimizationResult",
+    "optimize_prompt",
+    "GitDiffProfiler",
+    "GitDiffResult",
+    "profile_git_diff",
+    "BudgetTracker",
+    "BudgetExceededError",
+    "track",
+    "AuditReporter",
+    "generate_report",
+    "MCPServer",
+    "scaffold_github_workflow",
+    "install_git_precommit_hook",
 ]
