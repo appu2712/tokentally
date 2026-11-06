@@ -31,11 +31,14 @@ class TokenCountResult:
 
 # Model to tiktoken encoding mapping
 MODEL_TO_ENCODING = {
+    "gpt-4.5": "o200k_base",
     "gpt-4o": "o200k_base",
     "gpt-4o-mini": "o200k_base",
     "o1": "o200k_base",
     "o1-mini": "o200k_base",
+    "o3": "o200k_base",
     "o3-mini": "o200k_base",
+    "o3-pro": "o200k_base",
     "gpt-4-turbo": "cl100k_base",
     "gpt-4": "cl100k_base",
     "gpt-3.5-turbo": "cl100k_base",
@@ -52,7 +55,7 @@ def get_model_encoding(model_name: str) -> str:
     name = model_name.strip().lower()
     if name in MODEL_TO_ENCODING:
         return MODEL_TO_ENCODING[name]
-    if name.startswith(("gpt-4o", "o1", "o3", "llama", "deepseek", "qwen", "groq-llama", "cerebras-llama")):
+    if name.startswith(("gpt-4.5", "gpt-4o", "o1", "o3", "llama", "deepseek", "qwen", "groq", "cerebras", "grok")):
         return "o200k_base"
     return "cl100k_base"
 

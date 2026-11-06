@@ -253,8 +253,11 @@ class PromptContextAnalyzer:
             recommendation=cache_rec,
         )
 
-        # 3. Reasoning Token Modeling (OpenAI o1, o3-mini, DeepSeek R1)
-        is_reasoning = canonical_model in ("o1", "o1-mini", "o3-mini", "deepseek-r1")
+        # 3. Reasoning Token Modeling (OpenAI o1/o3, DeepSeek R1, Gemini Thinking, Claude 3.7)
+        is_reasoning = canonical_model in (
+            "o1", "o1-mini", "o3", "o3-mini", "o3-pro", "deepseek-r1",
+            "gemini-2.0-flash-thinking", "claude-3-7-sonnet", "grok-3-mini"
+        ) or "reasoning" in canonical_model or "thinking" in canonical_model
         if is_reasoning:
             # Reasoning tokens typically consume between 1x and 4x the input tokens for complex tasks
             low_r = int(total_tokens * 1.0)

@@ -122,6 +122,20 @@ class TestCLI(unittest.TestCase):
         self.assertEqual(ret_rem, 0)
         self.assertIn('"status": "removed"', f_rem.getvalue())
 
+    def test_cli_models_search(self):
+        f = io.StringIO()
+        with redirect_stdout(f):
+            ret = main(["models", "--search", "grok", "--json"])
+        self.assertEqual(ret, 0)
+        self.assertIn("grok-3", f.getvalue())
+
+    def test_cli_models_provider(self):
+        f = io.StringIO()
+        with redirect_stdout(f):
+            ret = main(["models", "--provider", "Anthropic", "--json"])
+        self.assertEqual(ret, 0)
+        self.assertIn("claude-3-7-sonnet", f.getvalue())
+
 
 if __name__ == "__main__":
     unittest.main()

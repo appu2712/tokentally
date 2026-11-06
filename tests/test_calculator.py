@@ -6,6 +6,7 @@ from tokentally.models import (
     normalize_model_name,
     save_custom_model,
     remove_custom_model,
+    list_supported_models,
     ModelPricing,
 )
 
@@ -68,6 +69,54 @@ class TestCalculator(unittest.TestCase):
         # Qwen
         p_qwen = get_model_pricing("qwen-2.5-coder-32b")
         self.assertEqual(p_qwen.provider, "Alibaba / Open")
+
+    def test_latest_frontier_models_2025_2026(self):
+        # OpenAI latest
+        p_45 = get_model_pricing("gpt-4.5")
+        self.assertEqual(p_45.input_per_m, 75.00)
+        p_o3 = get_model_pricing("o3")
+        self.assertEqual(p_o3.input_per_m, 10.00)
+        p_o3_pro = get_model_pricing("o3-pro")
+        self.assertEqual(p_o3_pro.input_per_m, 20.00)
+
+        # Anthropic latest
+        p_37 = get_model_pricing("claude-3-7-sonnet")
+        self.assertEqual(p_37.input_per_m, 3.00)
+        self.assertEqual(p_37.cached_input_per_m, 0.30)
+        p_35_opus = get_model_pricing("claude-3-5-opus")
+        self.assertEqual(p_35_opus.input_per_m, 15.00)
+
+        # xAI Grok latest
+        p_grok3 = get_model_pricing("grok-3")
+        self.assertEqual(p_grok3.provider, "xAI")
+        self.assertEqual(p_grok3.input_per_m, 3.00)
+        p_grok3_mini = get_model_pricing("grok-3-mini")
+        self.assertEqual(p_grok3_mini.input_per_m, 0.30)
+
+        # Google Gemini latest
+        p_gemini_thinking = get_model_pricing("gemini-2.0-flash-thinking")
+        self.assertEqual(p_gemini_thinking.input_per_m, 0.10)
+        p_gemini_pro2 = get_model_pricing("gemini-2.0-pro")
+        self.assertEqual(p_gemini_pro2.input_per_m, 1.25)
+
+        # Mistral latest
+        p_saba = get_model_pricing("mistral-saba")
+        self.assertEqual(p_saba.input_per_m, 0.20)
+        p_pixtral = get_model_pricing("pixtral-large")
+        self.assertEqual(p_pixtral.input_per_m, 2.00)
+
+        # Meta LLaMA 3.2 Vision
+        p_llama_vis = get_model_pricing("llama-3.2-90b-vision")
+        self.assertEqual(p_llama_vis.input_per_m, 0.90)
+
+    def test_list_models_filtering(self):
+        grok_models = list_supported_models(search="grok")
+        self.assertTrue(any("grok-3" in m for m in grok_models))
+
+        openai_models = list_supported_models(provider="OpenAI")
+        self.assertTrue(all(MODEL_REGISTRY[m].provider == "OpenAI" for m in openai_models))
+        self.assertIn("gpt-4.5", openai_models)
+        self.assertIn("o3", openai_models)
 
     def test_dynamic_custom_model_lifecycle(self):
         model_name = "test-custom-finetune-xyz"

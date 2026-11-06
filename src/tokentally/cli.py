@@ -23,7 +23,15 @@ from .analyzer import analyze_prompt_context
 from .regression import compare_prompt_regression
 from .tools import analyze_tool_schemas, simulate_history_growth
 from .config import load_config
-from .models import MODEL_REGISTRY, list_supported_models, ModelPricing, save_custom_model, remove_custom_model, get_full_registry
+from .models import (
+    MODEL_REGISTRY,
+    list_supported_models,
+    ModelPricing,
+    save_custom_model,
+    remove_custom_model,
+    get_full_registry,
+    sync_live_models,
+)
 
 # Ensure stdout encoding is safe across all platforms
 if hasattr(sys.stdout, "reconfigure"):
@@ -633,6 +641,21 @@ def handle_install_hook(args: argparse.Namespace) -> int:
 
 
 def handle_models(args: argparse.Namespace) -> int:
+    if getattr(args, "sync", False):
+        try:
+            if not args.json:
+                print(f"Connecting to live community pricing registry...")
+            count = sync_live_models()
+            if args.json:
+                print(json.dumps({"status": "synchronized", "total_models": count}, indent=2))
+            else:
+                print(f"\n{BOLD}{GREEN}{CHECKMARK} Successfully synchronized {count:,} models from the live community registry!{RESET}")
+                print(f"  All latest frontier and open-source models are now available locally for token and cost calculations.\n")
+            return 0
+        except Exception as e:
+            sys.stderr.write(f"{RED}Error syncing live models:{RESET} {e}\n")
+            return 1
+
     if getattr(args, "add", None):
         pricing = ModelPricing(
             provider=args.provider or "Custom",
@@ -662,27 +685,41 @@ def handle_models(args: argparse.Namespace) -> int:
                 print(f"\n{BOLD}{YELLOW}Model '{args.remove}' was not found in custom pricing.{RESET}\n")
         return 0
 
+    search_q = getattr(args, "search", None)
+    provider_q = getattr(args, "provider", None)
+    limit = getattr(args, "limit", None)
+    if limit is None and not search_q and not provider_q and not getattr(args, "all", False):
+        limit = 50
+
     registry = get_full_registry()
-    models = list_supported_models()
+    models = list_supported_models(search=search_q, provider=provider_q, limit=limit)
 
     if args.json:
         data = {m: registry[m].__dict__ for m in models}
         print(json.dumps(data, indent=2))
         return 0
 
-    print(f"\n{BOLD}{CYAN}=== Supported Models & Pricing (per 1M tokens) ==={RESET}")
-    header = f"{'MODEL':<26} {'PROVIDER':<18} {'INPUT ($)':<11} {'OUTPUT ($)':<12} {'CACHED ($)':<12} {'CONTEXT'}"
+    title_suffix = ""
+    if search_q:
+        title_suffix += f" (matching '{search_q}')"
+    if provider_q:
+        title_suffix += f" (provider: {provider_q})"
+
+    print(f"\n{BOLD}{CYAN}=== Supported Models & Pricing (per 1M tokens){title_suffix} ==={RESET}")
+    header = f"{'MODEL':<28} {'PROVIDER':<18} {'INPUT ($)':<11} {'OUTPUT ($)':<12} {'CACHED ($)':<12} {'CONTEXT'}"
     print(f"{BOLD}{header}{RESET}")
     print("-" * len(header))
 
     for m in models:
         p = registry[m]
         cached_str = f"${p.cached_input_per_m:.4f}" if p.cached_input_per_m is not None else "N/A"
-        ctx_k = f"{p.context_window // 1000}k"
+        ctx_k = f"{p.context_window // 1000}k" if p.context_window >= 1000 else f"{p.context_window}"
         print(
-            f"{p.name:<26} {p.provider:<18} ${p.input_per_m:<10.4f} ${p.output_per_m:<11.4f} "
+            f"{p.name:<28} {p.provider:<18} ${p.input_per_m:<10.4f} ${p.output_per_m:<11.4f} "
             f"{cached_str:<12} {ctx_k}"
         )
+    if limit and len(registry) > limit and not search_q and not provider_q:
+        print(f"\n  {DIM}Showing top {len(models)} models out of {len(registry):,}. Use --search, --provider, or --all to view more.{RESET}")
     print()
     return 0
 
@@ -815,8 +852,12 @@ def build_parser() -> argparse.ArgumentParser:
 
     # models
     p_models = subparsers.add_parser("models", help="List all supported models, query pricing, or register custom models")
+    p_models.add_argument("--sync", action="store_true", help="Synchronize thousands of live models from online open pricing registry")
+    p_models.add_argument("-s", "--search", help="Search models by keyword (e.g. grok, o3, claude, gemini, qwen)")
+    p_models.add_argument("-p", "--provider", help="Filter models by provider name (e.g. OpenAI, Anthropic, xAI, Google)")
+    p_models.add_argument("--all", action="store_true", help="List all models without pagination/truncation")
+    p_models.add_argument("--limit", type=int, help="Maximum number of models to display")
     p_models.add_argument("--add", help="Register a custom model name (e.g. my-finetune)")
-    p_models.add_argument("--provider", default="Custom", help="Provider name for custom model")
     p_models.add_argument("--input", type=float, default=0.0, help="Input price per 1M tokens in USD")
     p_models.add_argument("--output", type=float, default=0.0, help="Output price per 1M tokens in USD")
     p_models.add_argument("--cached", type=float, default=None, help="Cached input price per 1M tokens in USD")

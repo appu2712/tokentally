@@ -236,10 +236,17 @@ Packs files into a structured XML or Markdown prompt respecting `.gitignore` and
 tokentally pack ./src --output context.xml --max-tokens 50000 --ignore "tests/*,*.log"
 ```
 
-### 11. Custom Model Management
-Register proprietary internal or fine-tuned models:
+### 11. Model Discovery, Live Synchronization & Custom Models
+Browse built-in frontier models, synchronize thousands of community models in real time with zero dependencies, or register private fine-tunes:
 ```bash
-# Register a custom fine-tune
+# Search registry for frontier models
+tokentally models --search grok
+tokentally models --provider Anthropic
+
+# Synchronize 3,800+ models from the live community pricing database
+tokentally models --sync
+
+# Register a custom internal fine-tune
 tokentally models --add my-company-model --provider Internal --input 0.50 --output 1.50 --cached 0.10
 
 # Remove when deprecated
@@ -352,31 +359,36 @@ def call_agent_pipeline(query: str):
 
 | Model Identifier | Provider | Input ($) | Output ($) | Cached ($) | Context Window |
 | :--- | :--- | :--- | :--- | :--- | :--- |
+| **gpt-4.5** | OpenAI | \$75.0000 | \$150.0000 | \$37.5000 | 128k |
 | **gpt-4o** | OpenAI | \$2.5000 | \$10.0000 | \$1.2500 | 128k |
 | **gpt-4o-mini** | OpenAI | \$0.1500 | \$0.6000 | \$0.0750 | 128k |
-| **o1** | OpenAI | \$15.0000 | \$60.0000 | \$7.5000 | 200k |
-| **o1-mini** | OpenAI | \$1.1000 | \$4.4000 | \$0.5500 | 128k |
+| **o3** | OpenAI | \$10.0000 | \$40.0000 | \$5.0000 | 200k |
+| **o3-pro** | OpenAI | \$20.0000 | \$80.0000 | \$10.0000 | 200k |
 | **o3-mini** | OpenAI | \$1.1000 | \$4.4000 | \$0.5500 | 200k |
+| **o1** | OpenAI | \$15.0000 | \$60.0000 | \$7.5000 | 200k |
 | **claude-3-7-sonnet** | Anthropic | \$3.0000 | \$15.0000 | \$0.3000 | 200k |
 | **claude-3-5-sonnet** | Anthropic | \$3.0000 | \$15.0000 | \$0.3000 | 200k |
 | **claude-3-5-haiku** | Anthropic | \$0.8000 | \$4.0000 | \$0.0800 | 200k |
-| **claude-3-opus** | Anthropic | \$15.0000 | \$75.0000 | \$1.5000 | 200k |
+| **claude-3-5-opus** | Anthropic | \$15.0000 | \$75.0000 | \$1.5000 | 200k |
+| **grok-3** | xAI | \$3.0000 | \$15.0000 | \$0.7500 | 131k |
+| **grok-3-mini** | xAI | \$0.3000 | \$1.5000 | \$0.0750 | 131k |
 | **gemini-2.5-pro** | Google | \$1.2500 | \$5.0000 | \$0.3125 | 1000k |
+| **gemini-2.0-flash-thinking** | Google | \$0.1000 | \$0.4000 | \$0.0250 | 1000k |
 | **gemini-2.5-flash** | Google | \$0.1000 | \$0.4000 | \$0.0250 | 1000k |
-| **gemini-2.0-flash** | Google | \$0.1000 | \$0.4000 | \$0.0250 | 1000k |
 | **deepseek-v3** | DeepSeek | \$0.1400 | \$0.2800 | \$0.0140 | 64k |
 | **deepseek-r1** | DeepSeek | \$0.5500 | \$2.1900 | \$0.1400 | 64k |
-| **codestral** | Mistral | \$0.3000 | \$0.9000 | N/A | 256k |
-| **mistral-large** | Mistral | \$2.0000 | \$6.0000 | N/A | 128k |
-| **command-r** | Cohere | \$0.1500 | \$0.6000 | \$0.0750 | 128k |
-| **command-r-plus** | Cohere | \$2.5000 | \$10.0000 | \$1.2500 | 128k |
-| **bedrock-claude-3-5** | AWS Bedrock | \$3.0000 | \$15.0000 | \$0.3000 | 200k |
-| **bedrock-nova-pro** | AWS Bedrock | \$0.8000 | \$3.2000 | \$0.2000 | 300k |
-| **bedrock-nova-lite** | AWS Bedrock | \$0.0600 | \$0.2400 | \$0.0150 | 300k |
-| **cerebras-llama-3.3-70b**| Cerebras | \$0.6000 | \$0.6000 | N/A | 128k |
-| **groq-llama-3.3-70b** | Groq | \$0.5900 | \$0.7900 | N/A | 128k |
+| **mistral-saba** | Mistral | \$0.2000 | \$0.6000 | N/A | 32k |
+| **pixtral-large** | Mistral | \$2.0000 | \$6.0000 | N/A | 128k |
+| **codestral-2501** | Mistral | \$0.3000 | \$0.9000 | N/A | 256k |
+| **qwen-2.5-max** | Alibaba / Open | \$1.6000 | \$6.4000 | N/A | 128k |
 | **qwen-2.5-coder-32b** | Alibaba / Open | \$0.2000 | \$0.2000 | N/A | 128k |
 | **llama-3.3-70b** | Meta / Open | \$0.7000 | \$0.8000 | N/A | 128k |
+| **llama-3.2-90b-vision** | Meta / Open | \$0.9000 | \$0.9000 | N/A | 128k |
+| **command-r** | Cohere | \$0.1500 | \$0.6000 | \$0.0750 | 128k |
+| **bedrock-claude-3-7-sonnet** | AWS Bedrock | \$3.0000 | \$15.0000 | \$0.3000 | 200k |
+| **bedrock-nova-pro** | AWS Bedrock | \$0.8000 | \$3.2000 | \$0.2000 | 300k |
+| **groq-llama-3.3-70b** | Groq | \$0.5900 | \$0.7900 | N/A | 128k |
+| **cerebras-llama-3.3-70b**| Cerebras | \$0.6000 | \$0.6000 | N/A | 128k |
 | **ollama-local** | Ollama | \$0.0000 | \$0.0000 | \$0.0000 | 128k |
 | **vllm-local** | vLLM | \$0.0000 | \$0.0000 | \$0.0000 | 128k |
 
