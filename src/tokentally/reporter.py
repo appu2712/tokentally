@@ -12,6 +12,16 @@ from .calculator import estimate_cost, compare_models
 from .packer import pack_repository
 
 
+def _looks_like_file_path(target: str) -> bool:
+    if not target or "\n" in target:
+        return False
+    p = target.strip()
+    if p.startswith(("./", "../", "/", "\\", "~")) or (len(p) > 2 and p[1] == ":" and p[2] in ("/", "\\")):
+        return True
+    file_exts = {".txt", ".md", ".json", ".xml", ".prompt", ".py", ".ts", ".js", ".csv", ".toml", ".yaml", ".yml", ".html"}
+    return any(p.lower().endswith(ext) for ext in file_exts)
+
+
 class AuditReporter:
     """Generates executive summaries, CSV matrices, and HTML cost audits."""
 
@@ -31,6 +41,8 @@ class AuditReporter:
         elif os.path.isfile(target_path):
             tokens = count_tokens(target_path, model=model, is_file=True)
             target_type = "File"
+        elif _looks_like_file_path(target_path) and not os.path.exists(target_path):
+            raise FileNotFoundError(f"Target file or directory not found: '{target_path}'")
         else:
             tokens = count_tokens(target_path, model=model)
             target_type = "Text Prompt"
@@ -73,6 +85,10 @@ class AuditReporter:
     ) -> str:
         if os.path.isdir(target_path):
             tokens = pack_repository(target_path).total_tokens
+        elif os.path.isfile(target_path):
+            tokens = count_tokens(target_path, is_file=True)
+        elif _looks_like_file_path(target_path) and not os.path.exists(target_path):
+            raise FileNotFoundError(f"Target file or directory not found: '{target_path}'")
         else:
             tokens = count_tokens(target_path)
 

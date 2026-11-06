@@ -80,6 +80,35 @@ class TestCLI(unittest.TestCase):
         self.assertEqual(ret, 0)
         self.assertIn('"progress_per_token_score"', f.getvalue())
 
+    def test_cli_file_not_found(self):
+        f_err = io.StringIO()
+        with redirect_stderr(f_err):
+            ret = main(["count", "nonexistent_file_xyz.txt"])
+        self.assertEqual(ret, 1)
+        self.assertIn("File not found", f_err.getvalue())
+
+    def test_cli_file_not_found_json(self):
+        f = io.StringIO()
+        with redirect_stdout(f):
+            ret = main(["count", "nonexistent_file_xyz.txt", "--json"])
+        self.assertEqual(ret, 1)
+        self.assertIn('"error"', f.getvalue())
+        self.assertIn('"status": "failed"', f.getvalue())
+
+    def test_cli_compare(self):
+        f = io.StringIO()
+        with redirect_stdout(f):
+            ret = main(["compare", "Test prompt for comparison", "--json"])
+        self.assertEqual(ret, 0)
+        self.assertIn('"total_cost_usd"', f.getvalue())
+
+    def test_cli_optimize(self):
+        f = io.StringIO()
+        with redirect_stdout(f):
+            ret = main(["optimize", "Line 1\n\n\n\nLine 2", "--json"])
+        self.assertEqual(ret, 0)
+        self.assertIn('"saved_tokens"', f.getvalue())
+
 
 if __name__ == "__main__":
     unittest.main()

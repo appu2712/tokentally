@@ -4,6 +4,7 @@ Tool schema analyzer, agent loop detector, and multi-turn cumulative history sim
 
 from dataclasses import dataclass, asdict
 import json
+import os
 from typing import Any, Dict, List, Optional, Union
 
 from .counter import count_tokens_detailed
@@ -72,6 +73,16 @@ class AgentLoopReport:
         return asdict(self)
 
 
+def _looks_like_file_path(target: str) -> bool:
+    if not target or "\n" in target:
+        return False
+    p = target.strip()
+    if p.startswith(("./", "../", "/", "\\", "~")) or (len(p) > 2 and p[1] == ":" and p[2] in ("/", "\\")):
+        return True
+    file_exts = {".txt", ".md", ".json", ".xml", ".prompt", ".py", ".ts", ".js", ".csv", ".toml", ".yaml", ".yml", ".html"}
+    return any(p.lower().endswith(ext) for ext in file_exts)
+
+
 class ToolWorkloadEngine:
     """Analyzes function calling schemas, simulates cumulative context, and audits agent loops."""
 
@@ -104,6 +115,11 @@ class ToolWorkloadEngine:
         model: str = "gpt-4o",
     ) -> ToolCatalogReport:
         if isinstance(tools_input, str):
+            if os.path.isfile(tools_input):
+                with open(tools_input, "r", encoding="utf-8", errors="replace") as f:
+                    tools_input = f.read()
+            elif _looks_like_file_path(tools_input) and not os.path.exists(tools_input):
+                raise FileNotFoundError(f"Tool schema file not found: '{tools_input}'")
             try:
                 tools_data = json.loads(tools_input)
             except Exception as e:

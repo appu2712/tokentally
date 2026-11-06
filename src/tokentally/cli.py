@@ -66,12 +66,24 @@ def _render_bar(pct: float, width: int = 14) -> str:
     return f"[{'#' * filled}{'-' * (width - filled)}]"
 
 
+def _looks_like_file_path(target: str) -> bool:
+    if not target or "\n" in target:
+        return False
+    p = target.strip()
+    if p.startswith(("./", "../", "/", "\\", "~")) or (len(p) > 2 and p[1] == ":" and p[2] in ("/", "\\")):
+        return True
+    file_exts = {".txt", ".md", ".json", ".xml", ".prompt", ".py", ".ts", ".js", ".csv", ".toml", ".yaml", ".yml", ".html"}
+    return any(p.lower().endswith(ext) for ext in file_exts)
+
+
 def _read_input_target(target: Optional[str]) -> str:
     """Read content from target argument, stdin pipe, or file."""
     if target and target != "-":
         if os.path.isfile(target):
             with open(target, "r", encoding="utf-8", errors="replace") as f:
                 return f.read()
+        if _looks_like_file_path(target):
+            raise FileNotFoundError(f"File not found: '{target}'")
         return target
 
     if target == "-":
@@ -735,7 +747,23 @@ def main(args: Optional[List[str]] = None) -> int:
 
     handler = commands.get(parsed_args.command)
     if handler:
-        return handler(parsed_args)
+        try:
+            return handler(parsed_args)
+        except FileNotFoundError as e:
+            if getattr(parsed_args, "json", False):
+                print(json.dumps({"error": str(e), "status": "failed"}, indent=2))
+            else:
+                sys.stderr.write(f"{RED}Error:{RESET} {e}\n")
+            return 1
+        except KeyboardInterrupt:
+            sys.stderr.write("\nAborted by user.\n")
+            return 130
+        except Exception as e:
+            if getattr(parsed_args, "json", False):
+                print(json.dumps({"error": str(e), "status": "failed"}, indent=2))
+            else:
+                sys.stderr.write(f"{RED}Error:{RESET} {e}\n")
+            return 1
 
     parser.print_help()
     return 1

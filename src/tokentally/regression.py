@@ -33,6 +33,16 @@ class RegressionResult:
         return asdict(self)
 
 
+def _looks_like_file_path(target: str) -> bool:
+    if not target or "\n" in target:
+        return False
+    p = target.strip()
+    if p.startswith(("./", "../", "/", "\\", "~")) or (len(p) > 2 and p[1] == ":" and p[2] in ("/", "\\")):
+        return True
+    file_exts = {".txt", ".md", ".json", ".xml", ".prompt", ".py", ".ts", ".js", ".csv", ".toml", ".yaml", ".yml", ".html"}
+    return any(p.lower().endswith(ext) for ext in file_exts)
+
+
 def _load_text_or_path(target: Union[str, Path]) -> str:
     target_str = str(target)
 
@@ -59,6 +69,8 @@ def _load_text_or_path(target: Union[str, Path]) -> str:
     if os.path.isfile(target_str):
         with open(target_str, "r", encoding="utf-8", errors="replace") as f:
             return f.read()
+    if _looks_like_file_path(target_str) and not os.path.exists(target_str):
+        raise FileNotFoundError(f"Target file not found: '{target_str}'")
     return target_str
 
 

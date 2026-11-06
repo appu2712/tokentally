@@ -200,9 +200,9 @@ class MCPServer:
             }
 
         elif method == "tools/call":
-            params = req.get("params", {})
+            params = req.get("params") or {}
             name = params.get("name")
-            args = params.get("arguments", {})
+            args = params.get("arguments") or {}
 
             try:
                 out = self.dispatch_tool(name, args)
