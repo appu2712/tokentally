@@ -1,0 +1,35 @@
+# TokenTally Project Configuration File
+# Reference: https://github.com/appu2712/tokentally
+
+[budget]
+# Maximum allowed prompt tokens per single request
+max_prompt_tokens = 64000
+
+# Maximum allowed estimated dollar cost per single request (USD)
+max_cost_per_request = 0.50
+
+# Soft warning threshold (emits CLI warning without failing CI builds)
+warning_cost_usd = 0.20
+
+# Default model used for token counting and cost modeling
+default_model = "gpt-4o"
+
+[regression]
+# Path to baseline prompt for CI regression checks
+baseline_file = "prompts/system_baseline.txt"
+
+# Maximum allowed prompt expansion before failing CI builds (percentage)
+max_regression_pct = 15.0
+
+# Whether to halt CI on regression violations (exit code 1)
+fail_on_regression = true
+
+[review]
+# Maximum allowed tokens for an AI pull request review patch
+max_review_tokens = 40000
+
+# Automatically filter lockfiles (package-lock.json, poetry.lock, Cargo.lock) from review context
+exclude_lockfiles = true
+
+# Automatically filter compiled bundles and minified code from review context
+exclude_generated = true
