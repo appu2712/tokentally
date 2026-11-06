@@ -41,6 +41,7 @@ class CacheabilityReport:
     static_prefix_tokens: int
     dynamic_tokens: int
     cache_eligible: bool  # True if static prefix exceeds provider caching threshold (~1,024 tokens)
+    estimated_cache_hit_rate_pct: float
     cache_breaking_items: List[str]
     potential_cached_savings_usd: float
     recommendation: str
@@ -239,10 +240,14 @@ class PromptContextAnalyzer:
         else:
             cache_rec = f"Prompt prefix is cleanly cached! Eligible for ~${potential_savings:.6f} discount per cached request."
 
+        # Compute estimated cache hit rate
+        cache_hit_rate = (static_tokens / total_tokens * 100.0) if (cache_eligible and total_tokens > 0) else 0.0
+
         cache_report = CacheabilityReport(
             static_prefix_tokens=static_tokens,
             dynamic_tokens=max(0, total_tokens - static_tokens),
             cache_eligible=cache_eligible,
+            estimated_cache_hit_rate_pct=round(cache_hit_rate, 1),
             cache_breaking_items=cache_breakers,
             potential_cached_savings_usd=round(potential_savings, 8),
             recommendation=cache_rec,

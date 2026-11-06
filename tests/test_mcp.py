@@ -33,6 +33,34 @@ class TestMCP(unittest.TestCase):
         self.assertFalse(res["result"].get("isError", False))
         self.assertIn("total_cost_usd", res["result"]["content"][0]["text"])
 
+    def test_tools_call_analyze(self):
+        req = {
+            "jsonrpc": "2.0",
+            "id": 4,
+            "method": "tools/call",
+            "params": {
+                "name": "tokentally_analyze_context",
+                "arguments": {"prompt": "You are a bot.\n\n# User\nHello"}
+            }
+        }
+        res = self.server.handle_request(req)
+        self.assertFalse(res["result"].get("isError", False))
+        self.assertIn("components", res["result"]["content"][0]["text"])
+
+    def test_tools_call_history(self):
+        req = {
+            "jsonrpc": "2.0",
+            "id": 5,
+            "method": "tools/call",
+            "params": {
+                "name": "tokentally_simulate_history",
+                "arguments": {"num_turns": 6, "tokens_per_turn": 300}
+            }
+        }
+        res = self.server.handle_request(req)
+        self.assertFalse(res["result"].get("isError", False))
+        self.assertIn("cumulative_overhead_multiplier", res["result"]["content"][0]["text"])
+
 
 if __name__ == "__main__":
     unittest.main()

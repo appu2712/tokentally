@@ -59,6 +59,13 @@ CHECKMARK = "[PASS]"
 CROSSMARK = "[FAIL]"
 
 
+def _render_bar(pct: float, width: int = 14) -> str:
+    """Render a terminal ASCII distribution bar."""
+    filled = int(round(width * (pct / 100.0)))
+    filled = max(0, min(width, filled))
+    return f"[{'#' * filled}{'-' * (width - filled)}]"
+
+
 def _read_input_target(target: Optional[str]) -> str:
     """Read content from target argument, stdin pipe, or file."""
     if target and target != "-":
@@ -180,18 +187,20 @@ def handle_analyze(args: argparse.Namespace) -> int:
     print(f"  {BOLD}Model Evaluated:{RESET}    {res.model} (${res.total_cost_usd:.6f}/call)")
 
     print(f"\n{BOLD}Context Components Attribution:{RESET}")
-    header = f"  {'LAYER':<28} {'TOKENS':<10} {'PERCENT':<10} {'EST. COST':<12} {'CACHEABLE'}"
+    header = f"  {'LAYER':<24} {'TOKENS':<9} {'DISTRIBUTION':<18} {'PERCENT':<9} {'EST. COST':<12} {'CACHEABLE'}"
     print(f"{BOLD}{header}{RESET}")
-    print("  " + "-" * 72)
+    print("  " + "-" * 88)
     for c in res.components:
         cache_str = f"{GREEN}Yes{RESET}" if c.is_cacheable else f"{DIM}No{RESET}"
-        print(f"  {c.name:<28} {c.tokens:<10,d} {c.pct_of_total:<10.1f}% ${c.cost_usd:<11.6f} {cache_str}")
+        bar = _render_bar(c.pct_of_total)
+        print(f"  {c.name:<24} {c.tokens:<9,d} {CYAN}{bar:<18}{RESET} {c.pct_of_total:<9.1f}% ${c.cost_usd:<11.6f} {cache_str}")
 
     print(f"\n{BOLD}Prompt Caching Analysis:{RESET}")
-    print(f"  {BOLD}Static Prefix Tokens:{RESET} {res.cacheability.static_prefix_tokens:,}")
-    print(f"  {BOLD}Dynamic Tokens:{RESET}      {res.cacheability.dynamic_tokens:,}")
-    print(f"  {BOLD}Cache Status:{RESET}        {GREEN}Eligible{RESET}" if res.cacheability.cache_eligible else f"  {BOLD}Cache Status:{RESET}        {YELLOW}Not Eligible / Broken{RESET}")
-    print(f"  {BOLD}Recommendation:{RESET}      {res.cacheability.recommendation}")
+    print(f"  {BOLD}Static Prefix Tokens:{RESET}   {res.cacheability.static_prefix_tokens:,}")
+    print(f"  {BOLD}Dynamic Tokens:{RESET}        {res.cacheability.dynamic_tokens:,}")
+    print(f"  {BOLD}Cache Status:{RESET}          {GREEN}Eligible{RESET}" if res.cacheability.cache_eligible else f"  {BOLD}Cache Status:{RESET}          {YELLOW}Not Eligible / Broken{RESET}")
+    print(f"  {BOLD}Estimated Hit Rate:{RESET}    {BOLD}{GREEN}{res.cacheability.estimated_cache_hit_rate_pct}%{RESET}")
+    print(f"  {BOLD}Recommendation:{RESET}        {res.cacheability.recommendation}")
 
     if res.reasoning_estimate.is_reasoning_model:
         print(f"\n{BOLD}Reasoning Token Projections (o1 / o3-mini / R1):{RESET}")
@@ -218,13 +227,15 @@ def handle_diff(args: argparse.Namespace) -> int:
         stdin_content = sys.stdin.read()
         args.ref = None
 
+    exclude_gen = args.exclude_generated or getattr(args, "ignore_generated", False)
+
     try:
         diff_res = profile_git_diff(
             ref=args.ref,
             staged=args.staged,
             model=args.model,
             raw_patch=stdin_content,
-            exclude_generated=args.exclude_generated,
+            exclude_generated=exclude_gen,
         )
     except Exception as e:
         sys.stderr.write(f"{RED}Error:{RESET} {e}\n")
@@ -343,6 +354,45 @@ def handle_history(args: argparse.Namespace) -> int:
     print(f"  {BOLD}Cumulative Processed:{RESET}     {BOLD}{RED}{res.cumulative_processed_tokens:,} tokens{RESET} (${res.cumulative_total_cost_usd:.6f})")
     print(f"  {BOLD}Reprocessing Multiplier:{RESET}  {YELLOW}{res.cumulative_overhead_multiplier}x overhead{RESET}\n")
     print(f"  {GREEN}Recommendation:{RESET} {res.recommendation}\n")
+    return 0
+
+
+def handle_trace(args: argparse.Namespace) -> int:
+    content = _read_input_target(args.target)
+    if not content:
+        sys.stderr.write(f"{RED}Error:{RESET} No agent trajectory JSON file provided.\n")
+        return 1
+
+    try:
+        data = json.loads(content)
+        steps = data if isinstance(data, list) else data.get("steps", [])
+    except Exception as e:
+        sys.stderr.write(f"{RED}Error:{RESET} Invalid JSON trajectory: {e}\n")
+        return 1
+
+    from .tools import _DEFAULT_TOOL_ENGINE
+    report = _DEFAULT_TOOL_ENGINE.audit_agent_trace(steps)
+
+    if args.json:
+        print(json.dumps(report.to_dict(), indent=2))
+        return 0
+
+    status_str = f"{RED}[Loop Detected]{RESET}" if report.loop_detected else f"{GREEN}[No Loops]{RESET}"
+    print(f"\n{BOLD}{CYAN}=== Agent Trajectory & Loop Audit ==={RESET}")
+    print(f"  {BOLD}Total Trajectory Steps:{RESET} {report.total_steps}")
+    print(f"  {BOLD}Duplicate Calls:{RESET}        {report.duplicate_calls} {status_str}")
+    print(f"  {BOLD}Progress/Token Score:{RESET}   {CYAN}{report.progress_per_token_score:.2f}{RESET}")
+
+    if report.detected_cycles:
+        print(f"\n{BOLD}{RED}Detected Repetitive Cycles:{RESET}")
+        for c in report.detected_cycles:
+            print(f"  {RED}• {c}{RESET}")
+
+    if report.recommendations:
+        print(f"\n{BOLD}{YELLOW}Mitigation Recommendations:{RESET}")
+        for r in report.recommendations:
+            print(f"  {YELLOW}• {r}{RESET}")
+    print()
     return 0
 
 
@@ -576,8 +626,14 @@ def build_parser() -> argparse.ArgumentParser:
     p_diff.add_argument("ref", nargs="?", default=None, help="Git branch or commit ref to diff against")
     p_diff.add_argument("--staged", action="store_true", help="Profile only git staged changes")
     p_diff.add_argument("--exclude-generated", action="store_true", default=False, help="Exclude lockfiles and compiled code from review")
+    p_diff.add_argument("--ignore-generated", action="store_true", default=False, help="Alias for --exclude-generated")
     p_diff.add_argument("-m", "--model", default="gpt-4o", help="Model to evaluate")
     p_diff.add_argument("--json", action="store_true", help="Output in JSON format")
+
+    # trace
+    p_trc = subparsers.add_parser("trace", help="Audit agent step trajectories for repetitive loops and zero-progress cycles")
+    p_trc.add_argument("target", help="JSON file or string containing array of agent steps")
+    p_trc.add_argument("--json", action="store_true", help="Output in JSON format")
 
     # tools
     p_tls = subparsers.add_parser("tools", help="Audit tool schemas for excessive descriptions and field bloat")
@@ -665,6 +721,7 @@ def main(args: Optional[List[str]] = None) -> int:
         "diff": handle_diff,
         "tools": handle_tools,
         "history": handle_history,
+        "trace": handle_trace,
         "pack": handle_pack,
         "check": handle_check,
         "optimize": handle_optimize,

@@ -116,6 +116,33 @@ TOOLS_METADATA = [
             },
             "required": ["prompt"]
         }
+    },
+    {
+        "name": "tokentally_simulate_history",
+        "description": "Simulate multi-turn cumulative conversation history overhead O(n^2) across turns.",
+        "inputSchema": {
+            "type": "object",
+            "properties": {
+                "num_turns": {"type": "integer", "default": 10, "description": "Number of dialogue turns"},
+                "tokens_per_turn": {"type": "integer", "default": 500, "description": "Average tokens added per turn"},
+                "model": {"type": "string", "default": "gpt-4o"}
+            }
+        }
+    },
+    {
+        "name": "tokentally_audit_agent_trace",
+        "description": "Audit agent trajectories to detect repetitive tool cycles and calculate progress per token.",
+        "inputSchema": {
+            "type": "object",
+            "properties": {
+                "steps": {
+                    "type": "array",
+                    "items": {"type": "object"},
+                    "description": "List of step objects with tool name and arguments"
+                }
+            },
+            "required": ["steps"]
+        }
     }
 ]
 
@@ -251,6 +278,19 @@ class MCPServer:
             prompt = args["prompt"]
             strip_c = args.get("strip_comments", False)
             res = optimize_prompt(prompt, strip_comments=strip_c)
+            return res.to_dict()
+
+        elif name == "tokentally_simulate_history":
+            turns = args.get("num_turns", 10)
+            k = args.get("tokens_per_turn", 500)
+            m = args.get("model", "gpt-4o")
+            res = simulate_history_growth(num_turns=turns, tokens_per_turn=k, model=m)
+            return res.to_dict()
+
+        elif name == "tokentally_audit_agent_trace":
+            steps = args["steps"]
+            from .tools import _DEFAULT_TOOL_ENGINE
+            res = _DEFAULT_TOOL_ENGINE.audit_agent_trace(steps)
             return res.to_dict()
 
         raise ValueError(f"Unknown tool: {name}")

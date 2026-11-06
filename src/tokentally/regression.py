@@ -35,6 +35,27 @@ class RegressionResult:
 
 def _load_text_or_path(target: Union[str, Path]) -> str:
     target_str = str(target)
+
+    # Check if target is a git revision reference, e.g. "git:main:prompts/system.txt"
+    if target_str.startswith("git:"):
+        parts = target_str.split(":", 2)
+        if len(parts) == 3:
+            _, git_ref, git_path = parts
+            try:
+                import subprocess
+                cmd = ["git", "show", f"{git_ref}:{git_path}"]
+                res = subprocess.run(
+                    cmd,
+                    capture_output=True,
+                    text=True,
+                    check=True,
+                    encoding="utf-8",
+                    errors="replace",
+                )
+                return res.stdout
+            except Exception as e:
+                raise RuntimeError(f"Failed to fetch git revision '{git_ref}:{git_path}': {e}")
+
     if os.path.isfile(target_str):
         with open(target_str, "r", encoding="utf-8", errors="replace") as f:
             return f.read()

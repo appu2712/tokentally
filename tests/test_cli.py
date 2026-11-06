@@ -73,6 +73,13 @@ class TestCLI(unittest.TestCase):
         self.assertEqual(ret, 0)
         self.assertIn('"cumulative_overhead_multiplier"', f.getvalue())
 
+    def test_cli_trace(self):
+        f = io.StringIO()
+        with redirect_stdout(f):
+            ret = main(["trace", '[{"tool": "calc", "args": {"x": 1}}, {"tool": "calc", "args": {"x": 1}}]', "--json"])
+        self.assertEqual(ret, 0)
+        self.assertIn('"progress_per_token_score"', f.getvalue())
+
 
 if __name__ == "__main__":
     unittest.main()

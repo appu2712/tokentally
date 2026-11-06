@@ -40,6 +40,7 @@ GENERATED_PATTERNS = [
 ]
 
 DOC_EXTENSIONS = {".md", ".rst", ".txt", ".adoc"}
+BINARY_EXTENSIONS = {".png", ".jpg", ".jpeg", ".gif", ".ico", ".woff", ".woff2", ".ttf", ".pdf", ".zip", ".tar", ".gz", ".exe", ".dll", ".so", ".bin"}
 FIXTURE_DIR_NAMES = {"fixtures", "testdata", "snapshots", "__snapshots__"}
 
 
@@ -47,6 +48,9 @@ def classify_diff_file(path_str: str) -> str:
     """Classify file into human_code, lockfile, generated, fixture, docs, or binary."""
     p = Path(path_str)
     filename = p.name.lower()
+
+    if p.suffix.lower() in BINARY_EXTENSIONS:
+        return "binary"
 
     if filename in LOCKFILE_NAMES:
         return "lockfile"
@@ -203,10 +207,9 @@ class GitDiffProfiler:
         savings_pct = ((full_review_cost - optimized_review_cost) / full_review_cost * 100.0) if full_review_cost > 0 else 0.0
 
         recommendations: List[str] = []
-        if gen_tokens > 1000:
+        if gen_tokens > 0 and savings_pct > 5.0:
             recommendations.append(
-                f"Generated files and lockfiles consume {gen_tokens:,} tokens ({round((1 - density) * 100, 1)}% of review context). "
-                f"Excluding them will save approximately ${full_review_cost - optimized_review_cost:.6f} per review pass."
+                f"Suggestion: run with --ignore-generated to prune {gen_tokens:,} non-human tokens and reduce review cost from ${full_review_cost:.4f} to ${optimized_review_cost:.4f} (-{savings_pct:.1f}% reduction)."
             )
 
         final_diff = "\n".join(filtered_chunks) if exclude_generated else diff_text
