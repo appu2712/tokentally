@@ -22,6 +22,8 @@ class CostResult:
     output_cost_usd: float
     cached_cost_usd: float
     total_cost_usd: float
+    is_inferred: bool = False
+    inference_notes: Optional[str] = None
 
     def to_dict(self) -> Dict[str, Any]:
         return asdict(self)
@@ -100,6 +102,8 @@ class CostCalculator:
             output_cost_usd=round(output_cost, 8),
             cached_cost_usd=round(cached_cost, 8),
             total_cost_usd=round(total_cost, 8),
+            is_inferred=pricing.is_inferred,
+            inference_notes=pricing.inference_rationale,
         )
 
     def compare(

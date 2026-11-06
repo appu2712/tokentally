@@ -109,6 +109,76 @@ class TestCalculator(unittest.TestCase):
         p_llama_vis = get_model_pricing("llama-3.2-90b-vision")
         self.assertEqual(p_llama_vis.input_per_m, 0.90)
 
+    def test_frontier_2026_gemini_gpt_claude(self):
+        # Google Gemini 3.8 & Gemini 4 Argon
+        p_g38 = get_model_pricing("gemini-3.8")
+        self.assertEqual(p_g38.input_per_m, 1.25)
+        self.assertEqual(p_g38.context_window, 2000000)
+
+        p_g38_live = get_model_pricing("gemini-3.8-live")
+        self.assertEqual(p_g38_live.input_per_m, 0.15)
+        self.assertEqual(p_g38_live.output_per_m, 0.60)
+
+        p_g4_argon = get_model_pricing("gemini-4-argon")
+        self.assertEqual(p_g4_argon.input_per_m, 1.50)
+        self.assertEqual(p_g4_argon.output_per_m, 6.00)
+
+        p_g4_think = get_model_pricing("gemini-4-argon-thinking")
+        self.assertEqual(p_g4_think.input_per_m, 0.35)
+
+        # Anthropic Claude 3.8 & 4
+        p_c4_sonnet = get_model_pricing("claude-4-sonnet")
+        self.assertEqual(p_c4_sonnet.input_per_m, 3.00)
+        self.assertEqual(p_c4_sonnet.context_window, 300000)
+
+        p_c4_opus = get_model_pricing("claude-4-opus")
+        self.assertEqual(p_c4_opus.input_per_m, 15.00)
+
+        p_c38_sonnet = get_model_pricing("claude-3-8-sonnet")
+        self.assertEqual(p_c38_sonnet.input_per_m, 3.00)
+
+        # OpenAI 2026 releases: GPT-5, Luma, Sol, Astra, o4
+        p_gpt5 = get_model_pricing("gpt-5")
+        self.assertEqual(p_gpt5.input_per_m, 15.00)
+        self.assertEqual(p_gpt5.context_window, 256000)
+
+        p_luma = get_model_pricing("gpt-luma")
+        self.assertEqual(p_luma.input_per_m, 2.50)
+        self.assertEqual(p_luma.output_per_m, 10.00)
+
+        p_sol = get_model_pricing("gpt-sol")
+        self.assertEqual(p_sol.input_per_m, 0.20)
+        self.assertEqual(p_sol.output_per_m, 0.80)
+
+        p_astra = get_model_pricing("gpt-astra")
+        self.assertEqual(p_astra.input_per_m, 10.00)
+        self.assertEqual(p_astra.output_per_m, 40.00)
+
+        p_o4 = get_model_pricing("o4")
+        self.assertEqual(p_o4.input_per_m, 10.00)
+        self.assertEqual(p_o4.output_per_m, 40.00)
+
+    def test_adaptive_heuristic_tier_inference(self):
+        # Uncataloged future models dynamically infer tier without raising KeyError
+        inferred_g5 = get_model_pricing("gemini-5-pro")
+        self.assertTrue(inferred_g5.is_inferred)
+        self.assertEqual(inferred_g5.input_per_m, 1.25)
+        self.assertEqual(inferred_g5.provider, "Google (Inferred)")
+
+        inferred_c5 = get_model_pricing("claude-5-opus")
+        self.assertTrue(inferred_c5.is_inferred)
+        self.assertEqual(inferred_c5.input_per_m, 15.00)
+
+        inferred_sol_micro = get_model_pricing("gpt-future-sol-micro")
+        self.assertTrue(inferred_sol_micro.is_inferred)
+        self.assertEqual(inferred_sol_micro.input_per_m, 0.15)
+
+        # Cost estimation passes through inference flag
+        calc = CostCalculator()
+        res = calc.estimate("Sample prompt", model="gemini-5-pro", completion_tokens=100)
+        self.assertTrue(res.is_inferred)
+        self.assertIn("Inferred based on Google", res.inference_notes)
+
     def test_list_models_filtering(self):
         grok_models = list_supported_models(search="grok")
         self.assertTrue(any("grok-3" in m for m in grok_models))

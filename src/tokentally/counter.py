@@ -55,7 +55,10 @@ def get_model_encoding(model_name: str) -> str:
     name = model_name.strip().lower()
     if name in MODEL_TO_ENCODING:
         return MODEL_TO_ENCODING[name]
-    if name.startswith(("gpt-4.5", "gpt-4o", "o1", "o3", "llama", "deepseek", "qwen", "groq", "cerebras", "grok")):
+    if name.startswith((
+        "gpt-4.5", "gpt-4o", "gpt-5", "gpt-luma", "gpt-sol", "gpt-astra",
+        "o1", "o3", "o4", "llama", "deepseek", "qwen", "groq", "cerebras", "grok"
+    )):
         return "o200k_base"
     return "cl100k_base"
 

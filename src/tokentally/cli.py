@@ -152,7 +152,11 @@ def handle_cost(args: argparse.Namespace) -> int:
     if res.cached_tokens > 0:
         print(f"  {BOLD}Cached Cost:{RESET}      ${res.cached_cost_usd:.6f}")
     print(f"  {BOLD}Output Cost:{RESET}      ${res.output_cost_usd:.6f}")
-    print(f"  {BOLD}{GREEN}Total Cost:{RESET}       {BOLD}{GREEN}${res.total_cost_usd:.6f}{RESET}\n")
+    print(f"  {BOLD}{GREEN}Total Cost:{RESET}       {BOLD}{GREEN}${res.total_cost_usd:.6f}{RESET}")
+    if res.is_inferred:
+        print(f"\n  {BOLD}{YELLOW}Notice:{RESET}          {res.inference_notes}\n")
+    else:
+        print()
     return 0
 
 

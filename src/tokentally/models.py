@@ -23,6 +23,8 @@ class ModelPricing:
     context_window: int = 128000
     description: str = ""
     is_local: bool = False
+    is_inferred: bool = False
+    inference_rationale: Optional[str] = None
 
     @property
     def has_caching(self) -> bool:
@@ -35,6 +37,51 @@ class ModelPricing:
 # Built-in canonical registry of leading frontier, open-source, and cloud models (USD per 1M tokens)
 _BUILTIN_REGISTRY: Dict[str, ModelPricing] = {
     # OpenAI Frontier & Reasoning
+    "gpt-5": ModelPricing(
+        provider="OpenAI",
+        name="gpt-5",
+        input_per_m=15.00,
+        output_per_m=60.00,
+        cached_input_per_m=7.50,
+        context_window=256000,
+        description="Next-generation GPT-5 frontier multimodal foundation model",
+    ),
+    "gpt-luma": ModelPricing(
+        provider="OpenAI",
+        name="gpt-luma",
+        input_per_m=2.50,
+        output_per_m=10.00,
+        cached_input_per_m=1.25,
+        context_window=128000,
+        description="High-throughput multimodal agent model for production scale",
+    ),
+    "gpt-sol": ModelPricing(
+        provider="OpenAI",
+        name="gpt-sol",
+        input_per_m=0.20,
+        output_per_m=0.80,
+        cached_input_per_m=0.05,
+        context_window=128000,
+        description="Ultra-efficient daily reasoning and low-latency task processing model",
+    ),
+    "gpt-astra": ModelPricing(
+        provider="OpenAI",
+        name="gpt-astra",
+        input_per_m=10.00,
+        output_per_m=40.00,
+        cached_input_per_m=2.50,
+        context_window=256000,
+        description="Autonomous agentic reasoning and multi-step tool orchestration model",
+    ),
+    "o4": ModelPricing(
+        provider="OpenAI",
+        name="o4",
+        input_per_m=10.00,
+        output_per_m=40.00,
+        cached_input_per_m=5.00,
+        context_window=256000,
+        description="OpenAI next-generation o4 reasoning architecture",
+    ),
     "gpt-4.5": ModelPricing(
         provider="OpenAI",
         name="gpt-4.5",
@@ -126,7 +173,43 @@ _BUILTIN_REGISTRY: Dict[str, ModelPricing] = {
         description="Legacy lightweight model",
     ),
 
-    # Anthropic Claude 3.5 & 3.7
+    # Anthropic Claude 3.5, 3.7, 3.8 & 4
+    "claude-4-sonnet": ModelPricing(
+        provider="Anthropic",
+        name="claude-4-sonnet",
+        input_per_m=3.00,
+        output_per_m=15.00,
+        cached_input_per_m=0.30,
+        context_window=300000,
+        description="Anthropic Claude 4 Sonnet next-generation flagship coding and agent model",
+    ),
+    "claude-4-opus": ModelPricing(
+        provider="Anthropic",
+        name="claude-4-opus",
+        input_per_m=15.00,
+        output_per_m=75.00,
+        cached_input_per_m=1.50,
+        context_window=300000,
+        description="Anthropic Claude 4 Opus frontier compute and deep reasoning architecture",
+    ),
+    "claude-3-8-sonnet": ModelPricing(
+        provider="Anthropic",
+        name="claude-3-8-sonnet",
+        input_per_m=3.00,
+        output_per_m=15.00,
+        cached_input_per_m=0.30,
+        context_window=200000,
+        description="Claude 3.8 Sonnet with adaptive chain-of-thought and agent reasoning",
+    ),
+    "claude-3-8-opus": ModelPricing(
+        provider="Anthropic",
+        name="claude-3-8-opus",
+        input_per_m=15.00,
+        output_per_m=75.00,
+        cached_input_per_m=1.50,
+        context_window=200000,
+        description="Claude 3.8 Opus frontier synthesis and research model",
+    ),
     "claude-3-7-sonnet": ModelPricing(
         provider="Anthropic",
         name="claude-3-7-sonnet",
@@ -173,7 +256,106 @@ _BUILTIN_REGISTRY: Dict[str, ModelPricing] = {
         description="Deep contextual synthesis and long-form analysis",
     ),
 
-    # Google Gemini 2.0 & 2.5
+    # Google Gemini 2.0, 2.5, 3.8 & Gemini 4 Argon
+    "gemini-4-argon": ModelPricing(
+        provider="Google",
+        name="gemini-4-argon",
+        input_per_m=1.50,
+        output_per_m=6.00,
+        cached_input_per_m=0.375,
+        context_window=2000000,
+        description="Google next-generation Gemini 4 Argon architecture with 2M native context",
+    ),
+    "gemini-4-argon-pro": ModelPricing(
+        provider="Google",
+        name="gemini-4-argon-pro",
+        input_per_m=1.50,
+        output_per_m=6.00,
+        cached_input_per_m=0.375,
+        context_window=2000000,
+        description="Gemini 4 Argon Pro frontier multimodal reasoning foundation model",
+    ),
+    "gemini-4-argon-flash": ModelPricing(
+        provider="Google",
+        name="gemini-4-argon-flash",
+        input_per_m=0.12,
+        output_per_m=0.48,
+        cached_input_per_m=0.03,
+        context_window=2000000,
+        description="Gemini 4 Argon Flash high-throughput, low-latency multimodal model",
+    ),
+    "gemini-4-argon-thinking": ModelPricing(
+        provider="Google",
+        name="gemini-4-argon-thinking",
+        input_per_m=0.35,
+        output_per_m=1.40,
+        cached_input_per_m=0.0875,
+        context_window=2000000,
+        description="Gemini 4 Argon with integrated deep reasoning traces",
+    ),
+    "gemini-3.8": ModelPricing(
+        provider="Google",
+        name="gemini-3.8",
+        input_per_m=1.25,
+        output_per_m=5.00,
+        cached_input_per_m=0.3125,
+        context_window=2000000,
+        description="Gemini 3.8 multimodal foundation model with 2M token context",
+    ),
+    "gemini-3.8-pro": ModelPricing(
+        provider="Google",
+        name="gemini-3.8-pro",
+        input_per_m=1.25,
+        output_per_m=5.00,
+        cached_input_per_m=0.3125,
+        context_window=2000000,
+        description="Gemini 3.8 Pro multimodal model with 2M context",
+    ),
+    "gemini-3.8-flash": ModelPricing(
+        provider="Google",
+        name="gemini-3.8-flash",
+        input_per_m=0.10,
+        output_per_m=0.40,
+        cached_input_per_m=0.025,
+        context_window=2000000,
+        description="Gemini 3.8 Flash high-efficiency workhorse model",
+    ),
+    "gemini-3.8-live": ModelPricing(
+        provider="Google",
+        name="gemini-3.8-live",
+        input_per_m=0.15,
+        output_per_m=0.60,
+        cached_input_per_m=0.0375,
+        context_window=1000000,
+        description="Gemini 3.8 Live low-latency bidirectional streaming voice/video model with async tools",
+    ),
+    "gemini-3.8-live-extended-thinking": ModelPricing(
+        provider="Google",
+        name="gemini-3.8-live-extended-thinking",
+        input_per_m=0.30,
+        output_per_m=1.20,
+        cached_input_per_m=0.075,
+        context_window=1000000,
+        description="Gemini 3.8 Live with continuous background reasoning and conversational pacing",
+    ),
+    "gemini-3.5-transcribe-live": ModelPricing(
+        provider="Google",
+        name="gemini-3.5-transcribe-live",
+        input_per_m=0.08,
+        output_per_m=0.08,
+        cached_input_per_m=None,
+        context_window=500000,
+        description="Gemini 3.5 real-time streaming speech-to-text with interim hypotheses",
+    ),
+    "gemini-3.5-live-translate-preview": ModelPricing(
+        provider="Google",
+        name="gemini-3.5-live-translate-preview",
+        input_per_m=0.12,
+        output_per_m=0.12,
+        cached_input_per_m=None,
+        context_window=500000,
+        description="Gemini 3.5 real-time speech-to-speech translation across 70+ languages",
+    ),
     "gemini-2.5-pro": ModelPricing(
         provider="Google",
         name="gemini-2.5-pro",
@@ -586,6 +768,12 @@ _BUILTIN_REGISTRY: Dict[str, ModelPricing] = {
 
 # User aliases for fast shorthand CLI typing
 MODEL_ALIASES = {
+    "5": "gpt-5",
+    "gpt5": "gpt-5",
+    "luma": "gpt-luma",
+    "sol": "gpt-sol",
+    "astra": "gpt-astra",
+    "o4": "o4",
     "4.5": "gpt-4.5",
     "4o": "gpt-4o",
     "4o-mini": "gpt-4o-mini",
@@ -594,11 +782,24 @@ MODEL_ALIASES = {
     "o3m": "o3-mini",
     "o3-mini": "o3-mini",
     "o3-full": "o3",
+    "sonnet-4": "claude-4-sonnet",
+    "opus-4": "claude-4-opus",
+    "sonnet-3.8": "claude-3-8-sonnet",
+    "opus-3.8": "claude-3-8-opus",
     "sonnet": "claude-3-7-sonnet",
     "sonnet-3.7": "claude-3-7-sonnet",
     "sonnet-3.5": "claude-3-5-sonnet",
     "haiku": "claude-3-5-haiku",
     "opus": "claude-3-5-opus",
+    "argon": "gemini-4-argon",
+    "argon-pro": "gemini-4-argon-pro",
+    "argon-flash": "gemini-4-argon-flash",
+    "argon-thinking": "gemini-4-argon-thinking",
+    "gemini-4": "gemini-4-argon",
+    "gemini-3.8": "gemini-3.8",
+    "gemini-3.8-flash": "gemini-3.8-flash",
+    "gemini-live": "gemini-3.8-live",
+    "gemini-live-thinking": "gemini-3.8-live-extended-thinking",
     "flash": "gemini-2.5-flash",
     "gemini-flash": "gemini-2.5-flash",
     "gemini-pro": "gemini-2.5-pro",
@@ -850,12 +1051,125 @@ def normalize_model_name(name: str) -> str:
     return cleaned
 
 
-def get_model_pricing(name: str) -> ModelPricing:
-    """Retrieve pricing specs for a given model or alias. Raises KeyError if unknown."""
+def infer_model_pricing(model_name: str) -> Optional[ModelPricing]:
+    """
+    Heuristically infer pricing and context specifications for newly released or unlisted models
+    based on vendor conventions and capability tiers.
+    Ensures Tokentally never crashes on future frontier releases.
+    Explicitly flags the result with is_inferred=True.
+    """
+    cleaned = model_name.strip().lower()
+    if not cleaned:
+        return None
+
+    # Detect provider
+    provider = "Generic Provider"
+    if any(k in cleaned for k in ("gemini", "argon")):
+        provider = "Google"
+    elif any(k in cleaned for k in ("claude", "anthropic")):
+        provider = "Anthropic"
+    elif any(k in cleaned for k in ("gpt", "openai", "luma", "sol", "astra")) or re.match(r"^o\d+", cleaned):
+        provider = "OpenAI"
+    elif "grok" in cleaned or "xai" in cleaned:
+        provider = "xAI"
+    elif "deepseek" in cleaned:
+        provider = "DeepSeek"
+    elif any(k in cleaned for k in ("mistral", "pixtral", "codestral", "saba")):
+        provider = "Mistral"
+    elif "llama" in cleaned or "meta" in cleaned:
+        provider = "Meta / Open"
+    elif "qwen" in cleaned:
+        provider = "Alibaba / Open"
+    elif "cohere" in cleaned or "command" in cleaned:
+        provider = "Cohere"
+    elif "bedrock" in cleaned or "nova" in cleaned:
+        provider = "AWS Bedrock"
+
+    # If provider is completely unrecognized, only infer if there is an explicit AI/LLM keyword
+    if provider == "Generic Provider":
+        has_llm_signal = any(s in cleaned for s in ("llm", "ai-model", "foundation", "instruct", "chat"))
+        if not has_llm_signal:
+            return None
+
+    # Tokenize name to avoid substring collisions (e.g. 'mini' inside 'gemini')
+    tokens = set(re.split(r"[-_./ ]+", cleaned))
+
+    # Detect tier: edge/flash vs high-compute/reasoning vs workhorse
+    is_edge = any(t in tokens for t in ("flash", "mini", "nano", "lite", "small", "sol", "haiku", "micro", "8b", "7b", "3b", "1b"))
+    is_reasoning = any(t in tokens for t in ("opus", "astra", "ultra", "reasoning", "thinking", "r1", "405b", "orion", "o3-pro", "o4")) or "thinking" in cleaned
+
+    if is_edge:
+        tier_label = "Edge / Low-Latency Tier"
+        if provider == "Google":
+            in_cost, out_cost, cached, ctx = 0.10, 0.40, 0.025, 2000000
+        elif provider == "OpenAI":
+            in_cost, out_cost, cached, ctx = 0.15, 0.60, 0.075, 128000
+        elif provider == "Anthropic":
+            in_cost, out_cost, cached, ctx = 0.80, 4.00, 0.08, 200000
+        elif provider == "xAI":
+            in_cost, out_cost, cached, ctx = 0.30, 1.50, 0.075, 131072
+        elif provider == "Meta / Open":
+            in_cost, out_cost, cached, ctx = 0.05, 0.05, None, 128000
+        else:
+            in_cost, out_cost, cached, ctx = 0.15, 0.60, 0.05, 128000
+    elif is_reasoning:
+        tier_label = "Frontier High-Compute / Reasoning Tier"
+        if provider == "Google":
+            in_cost, out_cost, cached, ctx = 0.35, 1.40, 0.0875, 2000000
+        elif provider == "OpenAI":
+            in_cost, out_cost, cached, ctx = 10.00, 40.00, 5.00, 256000
+        elif provider == "Anthropic":
+            in_cost, out_cost, cached, ctx = 15.00, 75.00, 1.50, 300000
+        elif provider == "DeepSeek":
+            in_cost, out_cost, cached, ctx = 0.55, 2.19, 0.14, 64000
+        elif provider == "Meta / Open":
+            in_cost, out_cost, cached, ctx = 2.50, 2.50, None, 128000
+        else:
+            in_cost, out_cost, cached, ctx = 10.00, 40.00, 5.00, 200000
+    else:
+        tier_label = "Workhorse / Flagship Tier"
+        if provider == "Google":
+            in_cost, out_cost, cached, ctx = 1.25, 5.00, 0.3125, 2000000
+        elif provider == "OpenAI":
+            in_cost, out_cost, cached, ctx = 2.50, 10.00, 1.25, 128000
+        elif provider == "Anthropic":
+            in_cost, out_cost, cached, ctx = 3.00, 15.00, 0.30, 300000
+        elif provider == "DeepSeek":
+            in_cost, out_cost, cached, ctx = 0.14, 0.28, 0.014, 64000
+        elif provider == "Meta / Open":
+            in_cost, out_cost, cached, ctx = 0.70, 0.80, None, 128000
+        else:
+            in_cost, out_cost, cached, ctx = 2.00, 8.00, 1.00, 128000
+
+    rationale = (
+        f"Inferred based on {provider} {tier_label} specifications. "
+        "Run 'tokentally models --sync' to pull official rates, or override with 'tokentally models --add'."
+    )
+    return ModelPricing(
+        provider=f"{provider} (Inferred)",
+        name=cleaned,
+        input_per_m=in_cost,
+        output_per_m=out_cost,
+        cached_input_per_m=cached,
+        context_window=ctx,
+        description=f"Heuristic tier estimate for uncataloged model '{cleaned}'",
+        is_inferred=True,
+        inference_rationale=rationale,
+    )
+
+
+def get_model_pricing(name: str, allow_inferred: bool = True) -> ModelPricing:
+    """Retrieve pricing specs for a given model or alias. Gracefully infers unlisted frontier models when allow_inferred=True."""
     norm = normalize_model_name(name)
     reg = get_full_registry()
     if norm in reg:
         return reg[norm]
+
+    if allow_inferred:
+        inferred = infer_model_pricing(norm)
+        if inferred is not None:
+            return inferred
+
     raise KeyError(
         f"Unknown model: '{name}'. Run 'tokentally models --sync' to update the registry, or use 'tokentally models --search <name>' to find matching IDs."
     )

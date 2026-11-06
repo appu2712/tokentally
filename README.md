@@ -359,38 +359,52 @@ def call_agent_pipeline(query: str):
 
 | Model Identifier | Provider | Input ($) | Output ($) | Cached ($) | Context Window |
 | :--- | :--- | :--- | :--- | :--- | :--- |
+| **gemini-4-argon** | Google | \$1.5000 | \$6.0000 | \$0.3750 | 2000k |
+| **gemini-4-argon-thinking** | Google | \$0.3500 | \$1.4000 | \$0.0875 | 2000k |
+| **gemini-4-argon-flash** | Google | \$0.1200 | \$0.4800 | \$0.0300 | 2000k |
+| **gemini-3.8** | Google | \$1.2500 | \$5.0000 | \$0.3125 | 2000k |
+| **gemini-3.8-flash** | Google | \$0.1000 | \$0.4000 | \$0.0250 | 2000k |
+| **gemini-3.8-live** | Google | \$0.1500 | \$0.6000 | \$0.0375 | 1000k |
+| **gemini-3.8-live-thinking** | Google | \$0.3000 | \$1.2000 | \$0.0750 | 1000k |
+| **claude-4-sonnet** | Anthropic | \$3.0000 | \$15.0000 | \$0.3000 | 300k |
+| **claude-4-opus** | Anthropic | \$15.0000 | \$75.0000 | \$1.5000 | 300k |
+| **claude-3-8-sonnet** | Anthropic | \$3.0000 | \$15.0000 | \$0.3000 | 200k |
+| **claude-3-7-sonnet** | Anthropic | \$3.0000 | \$15.0000 | \$0.3000 | 200k |
+| **claude-3-5-sonnet** | Anthropic | \$3.0000 | \$15.0000 | \$0.3000 | 200k |
+| **claude-3-5-haiku** | Anthropic | \$0.8000 | \$4.0000 | \$0.0800 | 200k |
+| **gpt-5** | OpenAI | \$15.0000 | \$60.0000 | \$7.5000 | 256k |
+| **gpt-astra** | OpenAI | \$10.0000 | \$40.0000 | \$2.5000 | 256k |
+| **gpt-luma** | OpenAI | \$2.5000 | \$10.0000 | \$1.2500 | 128k |
+| **gpt-sol** | OpenAI | \$0.2000 | \$0.8000 | \$0.0500 | 128k |
 | **gpt-4.5** | OpenAI | \$75.0000 | \$150.0000 | \$37.5000 | 128k |
 | **gpt-4o** | OpenAI | \$2.5000 | \$10.0000 | \$1.2500 | 128k |
 | **gpt-4o-mini** | OpenAI | \$0.1500 | \$0.6000 | \$0.0750 | 128k |
+| **o4** | OpenAI | \$10.0000 | \$40.0000 | \$5.0000 | 256k |
 | **o3** | OpenAI | \$10.0000 | \$40.0000 | \$5.0000 | 200k |
 | **o3-pro** | OpenAI | \$20.0000 | \$80.0000 | \$10.0000 | 200k |
 | **o3-mini** | OpenAI | \$1.1000 | \$4.4000 | \$0.5500 | 200k |
 | **o1** | OpenAI | \$15.0000 | \$60.0000 | \$7.5000 | 200k |
-| **claude-3-7-sonnet** | Anthropic | \$3.0000 | \$15.0000 | \$0.3000 | 200k |
-| **claude-3-5-sonnet** | Anthropic | \$3.0000 | \$15.0000 | \$0.3000 | 200k |
-| **claude-3-5-haiku** | Anthropic | \$0.8000 | \$4.0000 | \$0.0800 | 200k |
-| **claude-3-5-opus** | Anthropic | \$15.0000 | \$75.0000 | \$1.5000 | 200k |
 | **grok-3** | xAI | \$3.0000 | \$15.0000 | \$0.7500 | 131k |
 | **grok-3-mini** | xAI | \$0.3000 | \$1.5000 | \$0.0750 | 131k |
-| **gemini-2.5-pro** | Google | \$1.2500 | \$5.0000 | \$0.3125 | 1000k |
-| **gemini-2.0-flash-thinking** | Google | \$0.1000 | \$0.4000 | \$0.0250 | 1000k |
-| **gemini-2.5-flash** | Google | \$0.1000 | \$0.4000 | \$0.0250 | 1000k |
 | **deepseek-v3** | DeepSeek | \$0.1400 | \$0.2800 | \$0.0140 | 64k |
 | **deepseek-r1** | DeepSeek | \$0.5500 | \$2.1900 | \$0.1400 | 64k |
 | **mistral-saba** | Mistral | \$0.2000 | \$0.6000 | N/A | 32k |
 | **pixtral-large** | Mistral | \$2.0000 | \$6.0000 | N/A | 128k |
 | **codestral-2501** | Mistral | \$0.3000 | \$0.9000 | N/A | 256k |
 | **qwen-2.5-max** | Alibaba / Open | \$1.6000 | \$6.4000 | N/A | 128k |
-| **qwen-2.5-coder-32b** | Alibaba / Open | \$0.2000 | \$0.2000 | N/A | 128k |
 | **llama-3.3-70b** | Meta / Open | \$0.7000 | \$0.8000 | N/A | 128k |
 | **llama-3.2-90b-vision** | Meta / Open | \$0.9000 | \$0.9000 | N/A | 128k |
-| **command-r** | Cohere | \$0.1500 | \$0.6000 | \$0.0750 | 128k |
 | **bedrock-claude-3-7-sonnet** | AWS Bedrock | \$3.0000 | \$15.0000 | \$0.3000 | 200k |
-| **bedrock-nova-pro** | AWS Bedrock | \$0.8000 | \$3.2000 | \$0.2000 | 300k |
-| **groq-llama-3.3-70b** | Groq | \$0.5900 | \$0.7900 | N/A | 128k |
-| **cerebras-llama-3.3-70b**| Cerebras | \$0.6000 | \$0.6000 | N/A | 128k |
 | **ollama-local** | Ollama | \$0.0000 | \$0.0000 | \$0.0000 | 128k |
 | **vllm-local** | vLLM | \$0.0000 | \$0.0000 | \$0.0000 | 128k |
+
+### Adaptive Heuristic Tier Engine (Future-Proof Fallback)
+
+Tokentally includes an **Adaptive Dynamic Tier Inference Engine** designed for newly announced models. When you supply any newly released model identifier (e.g. `gemini-5-pro`, `claude-5-opus`, `gpt-future-sol-micro`) that has not yet been synced or added to the local catalog:
+1. Tokentally breaks down the vendor family and capability tier without failing or throwing an unhandled error.
+2. Infers mathematically sound pricing and context boundaries based on published vendor tier standards.
+3. Explicitly marks the evaluation as `is_inferred: true` and includes an explanatory rationale notice in CLI outputs and JSON responses.
+4. You can override inferred rates at any time with `tokentally models --add <name>` or pull updated community rates via `tokentally models --sync`.
 
 ---
 
